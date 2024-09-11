@@ -3,6 +3,8 @@ import Login from './Login';
 import Register from './Register';
 import RecipeForm from './RecipeForm'; // Recipe creation and editing
 import RecipeList from './RecipeList'; // Recipe list component
+import MealPlanForm from './MealPlanForm'; // Meal plan creation component
+import MealPlanList from './MealPlanList'; // Meal plan list component
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase';
 
@@ -43,7 +45,7 @@ function App() {
         </div>
       )}
 
-      {/* Show recipe management only if the user is authenticated */}
+      {/* Show recipe and meal plan management only if the user is authenticated */}
       {user && (
         <div>
           <h2>Recipe Manager</h2>
@@ -52,6 +54,14 @@ function App() {
 
           {/* Recipe List with edit functionality */}
           <RecipeList onEdit={handleEdit} />
+
+          {/* Meal Planning Section */}
+          <h2>Meal Planning</h2>
+          {/* Meal Plan Form to create a new meal plan */}
+          <MealPlanForm />
+
+          {/* Meal Plan List to display the user's meal plans */}
+          <MealPlanList />
 
           {/* Logout button */}
           <button onClick={() => auth.signOut()}>Logout</button>
@@ -62,3 +72,4 @@ function App() {
 }
 
 export default App;
+
