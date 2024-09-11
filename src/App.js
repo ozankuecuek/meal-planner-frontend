@@ -1,23 +1,16 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import RecipeForm from './RecipeForm'; // The form component from Step 2.2
+import RecipeList from './RecipeList'; // The list component we just created
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <h1>Recipe Manager</h1>
+      {/* Recipe Form to create new recipes */}
+      <RecipeForm />
+      
+      {/* Recipe List to display public recipes */}
+      <RecipeList />
     </div>
   );
 }
