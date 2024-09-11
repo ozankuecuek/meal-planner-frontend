@@ -1,27 +1,57 @@
-import { useState } from 'react';
-import { db } from './firebase'; // import Firestore
-import { collection, addDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { db, auth } from './firebase';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
-const RecipeForm = () => {
+const RecipeForm = ({ editingRecipe }) => {
   const [title, setTitle] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [instructions, setInstructions] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const [user] = useAuthState(auth); // Get current user
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentRecipeId, setCurrentRecipeId] = useState(null);
+
+  useEffect(() => {
+    if (editingRecipe) {
+      setTitle(editingRecipe.title);
+      setIngredients(editingRecipe.ingredients);
+      setInstructions(editingRecipe.instructions);
+      setIsPublic(editingRecipe.public);
+      setIsEditing(true);
+      setCurrentRecipeId(editingRecipe.id);
+    }
+  }, [editingRecipe]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      await addDoc(collection(db, 'recipes'), {
+    if (isEditing && currentRecipeId) {
+      const recipeRef = doc(db, 'recipes', currentRecipeId);
+      await updateDoc(recipeRef, {
         title,
         ingredients,
         instructions,
         public: isPublic,
       });
+      alert('Recipe updated successfully!');
+    } else {
+      // Add new recipe with user ID (authorId)
+      await addDoc(collection(db, 'recipes'), {
+        title,
+        ingredients,
+        instructions,
+        public: isPublic,
+        authorId: user.uid, // Store the creator's UID (user ID)
+      });
       alert('Recipe added successfully!');
-    } catch (error) {
-      alert('Failed to add recipe');
     }
+
+    setTitle('');
+    setIngredients('');
+    setInstructions('');
+    setIsPublic(false);
+    setIsEditing(false);
   };
 
   return (
@@ -53,7 +83,7 @@ const RecipeForm = () => {
           onChange={(e) => setIsPublic(e.target.checked)}
         />
       </label>
-      <button type="submit">Add Recipe</button>
+      <button type="submit">{isEditing ? 'Update Recipe' : 'Add Recipe'}</button>
     </form>
   );
 };

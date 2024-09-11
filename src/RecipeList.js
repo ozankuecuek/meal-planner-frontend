@@ -1,22 +1,31 @@
-import { useState, useEffect } from 'react';
-import { db } from './firebase'; // Import the Firestore instance
-import { collection, getDocs } from 'firebase/firestore'; // Firestore functions to fetch data
+import React, { useState, useEffect } from 'react';
+import { db, auth } from './firebase';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
-const RecipeList = () => {
+const RecipeList = ({ onEdit }) => {
   const [recipes, setRecipes] = useState([]);
+  const [user] = useAuthState(auth); // Get current user
 
-  // Function to fetch recipes from Firestore
+  // Fetch recipes from Firestore
   useEffect(() => {
     const fetchRecipes = async () => {
-      const querySnapshot = await getDocs(collection(db, 'recipes')); // Fetch all recipes from Firestore
+      const querySnapshot = await getDocs(collection(db, 'recipes'));
       const recipesList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
-      setRecipes(recipesList); // Set the fetched recipes in state
+      setRecipes(recipesList);
     };
     fetchRecipes();
   }, []);
+
+  // Function to delete a recipe
+  const handleDelete = async (recipeId) => {
+    await deleteDoc(doc(db, 'recipes', recipeId));
+    alert('Recipe deleted successfully!');
+    setRecipes(recipes.filter((recipe) => recipe.id !== recipeId)); // Update state to remove deleted recipe
+  };
 
   return (
     <div>
@@ -27,6 +36,16 @@ const RecipeList = () => {
             <h3>{recipe.title}</h3>
             <p><strong>Ingredients:</strong> {recipe.ingredients}</p>
             <p><strong>Instructions:</strong> {recipe.instructions}</p>
+
+            {/* Only show the edit button if the user is the owner */}
+            {user && user.uid === recipe.authorId && (
+              <button onClick={() => onEdit(recipe)}>Edit</button>
+            )}
+
+            {/* Only show the delete button if the user is the owner */}
+            {user && user.uid === recipe.authorId && (
+              <button onClick={() => handleDelete(recipe.id)}>Delete</button>
+            )}
           </li>
         ))}
       </ul>
