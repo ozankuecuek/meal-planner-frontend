@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './theme/theme';  // Import the theme from theme.js
+import Navbar from './components/Navbar'; // Import Navbar
 import Login from './Login';
 import Register from './Register';
 import RecipeForm from './RecipeForm'; // Recipe creation and editing
@@ -19,57 +23,70 @@ function App() {
   };
 
   return (
-    <div>
-      <h1>Meal Planner App</h1>
+    <ThemeProvider theme={theme}> {/* Wrap the app with ThemeProvider */}
+      <CssBaseline /> {/* Apply base CSS reset */}
+      
+      {/* Add the Navbar here */}
+      <Navbar user={user} /> {/* Pass user prop to Navbar */}
 
-      {/* Toggle between login and register forms */}
-      {!user && (
-        <div>
-          {isRegistering ? (
-            <>
-              <Register />
-              <p>
-                Already have an account?{' '}
-                <button onClick={() => setIsRegistering(false)}>Login</button>
-              </p>
-            </>
-          ) : (
-            <>
-              <Login />
-              <p>
-                Don't have an account?{' '}
-                <button onClick={() => setIsRegistering(true)}>Register</button>
-              </p>
-            </>
-          )}
-        </div>
-      )}
+      <div style={{ padding: '16px', maxWidth: '1200px', margin: 'auto' }}>
+        {!user && (
+          <div>
+            {isRegistering ? (
+              <>
+                <Register />
+                <p>
+                  Already have an account?{' '}
+                  <button onClick={() => setIsRegistering(false)}>Login</button>
+                </p>
+              </>
+            ) : (
+              <>
+                <Login />
+                <p>
+                  Don't have an account?{' '}
+                  <button onClick={() => setIsRegistering(true)}>Register</button>
+                </p>
+              </>
+            )}
+          </div>
+        )}
 
-      {/* Show recipe and meal plan management only if the user is authenticated */}
-      {user && (
-        <div>
-          <h2>Recipe Manager</h2>
-          {/* Recipe Form to create or update a recipe */}
-          <RecipeForm editingRecipe={editingRecipe} />
+        {user && (
+          <>
+            {/* Create a Recipe Section */}
+            <div id="create-recipe">
+              <h2>Create a Recipe</h2>
+              <RecipeForm editingRecipe={editingRecipe} />
+            </div>
 
-          {/* Recipe List with edit functionality */}
-          <RecipeList onEdit={handleEdit} />
+            {/* Recipes Section */}
+            <div id="recipes" style={{ marginTop: '50px' }}>
+              <h2>Recipes</h2>
+              <RecipeList onEdit={handleEdit} />
+            </div>
 
-          {/* Meal Planning Section */}
-          <h2>Meal Planning</h2>
-          {/* Meal Plan Form to create a new meal plan */}
-          <MealPlanForm />
+            {/* Create a Meal Plan Section */}
+            <div id="create-mealplan" style={{ marginTop: '50px' }}>
+              <h2>Create a Meal Plan</h2>
+              <MealPlanForm />
+            </div>
 
-          {/* Meal Plan List to display the user's meal plans */}
-          <MealPlanList />
+            {/* My Meal Plans Section */}
+            <div id="mealplans" style={{ marginTop: '50px' }}>
+              <h2>My Meal Plans</h2>
+              <MealPlanList />
+            </div>
 
-          {/* Logout button */}
-          <button onClick={() => auth.signOut()}>Logout</button>
-        </div>
-      )}
-    </div>
+            {/* Logout button */}
+            <button onClick={() => auth.signOut()} style={{ marginTop: '20px' }}>
+              Logout
+            </button>
+          </>
+        )}
+      </div>
+    </ThemeProvider>
   );
 }
 
 export default App;
-

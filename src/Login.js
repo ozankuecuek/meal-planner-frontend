@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { TextField, Button, Grid, Typography, Paper } from '@mui/material';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -31,31 +32,53 @@ const Login = () => {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
+    <Paper elevation={3} style={{ padding: '16px', maxWidth: '400px', margin: 'auto' }}>
+      <Typography variant="h5" gutterBottom>
+        Login
+      </Typography>
+      {error && <Typography color="error">{error}</Typography>}
+      
       <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-        />
-        <button type="submit">Login</button>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <TextField
+              label="Email"
+              variant="outlined"
+              fullWidth
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              label="Password"
+              variant="outlined"
+              fullWidth
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Button variant="contained" color="primary" fullWidth type="submit">
+              Login
+            </Button>
+          </Grid>
+        </Grid>
       </form>
 
-      {/* Google Sign-In button */}
-      <button onClick={handleGoogleSignIn}>Sign in with Google</button>
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-    </div>
+      <Button 
+        variant="outlined" 
+        color="secondary" 
+        fullWidth 
+        onClick={handleGoogleSignIn} 
+        style={{ marginTop: '16px' }}
+      >
+        Sign in with Google
+      </Button>
+    </Paper>
   );
 };
 
