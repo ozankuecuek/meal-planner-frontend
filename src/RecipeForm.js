@@ -32,8 +32,7 @@ const RecipeForm = ({ editingRecipe }) => {
   // Handle adding a new ingredient to the list
   const addIngredient = () => {
     if (!newIngredient.name || !newIngredient.quantity || !newIngredient.unit) {
-      alert('Please provide all ingredient details');
-      return;
+      return; // Skip if ingredient details are incomplete
     }
     setIngredients([...ingredients, newIngredient]);
     setNewIngredient({ name: '', quantity: '', unit: 'Stk' });
@@ -133,7 +132,6 @@ const RecipeForm = ({ editingRecipe }) => {
               placeholder="Type ingredient or select from dropdown"
               value={newIngredient.name}
               onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
-              required
             />
 
             <TextField
@@ -160,7 +158,6 @@ const RecipeForm = ({ editingRecipe }) => {
               value={newIngredient.quantity}
               onChange={(e) => setNewIngredient({ ...newIngredient, quantity: e.target.value })}
               style={{ marginTop: '8px' }}
-              required
             />
 
             <TextField
@@ -171,7 +168,6 @@ const RecipeForm = ({ editingRecipe }) => {
               value={newIngredient.unit}
               onChange={(e) => setNewIngredient({ ...newIngredient, unit: e.target.value })}
               style={{ marginTop: '8px' }}
-              required
             >
               <MenuItem value="Stk">Stk</MenuItem>
               <MenuItem value="g">g</MenuItem>
