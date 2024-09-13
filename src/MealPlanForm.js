@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { TextField, Button, Grid, Typography, Paper, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
@@ -62,36 +62,47 @@ const MealPlanForm = ({ editingMealPlan }) => {
   };
 
   // Calculate the shopping list based on the selected recipes
-  const calculateShoppingList = (mealPlan) => {
+  const calculateShoppingList = async (meals, numPeople) => {
     const shoppingList = {};
 
-    Object.keys(mealPlan).forEach((dayKey) => {
-      const dayMeals = mealPlan[dayKey];
+    for (const day in meals) {
+      for (const mealType in meals[day]) {
+        const recipeId = meals[day][mealType];
+        if (recipeId) {
+          try {
+            const recipeDoc = await getDoc(doc(db, 'recipes', recipeId));
+            if (recipeDoc.exists()) {
+              const recipe = recipeDoc.data();
+              const recipeServings = recipe.servings || 1; // Default to 1 if not specified
 
-      ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
-        const recipeId = dayMeals[mealType];
-        const recipe = recipes.find((r) => r.id === recipeId);
+              recipe.ingredients.forEach((ingredient) => {
+                const key = `${ingredient.name}-${ingredient.unit}`;
+                const unitQuantity = parseFloat(ingredient.quantity) / recipeServings;
+                const adjustedQuantity = unitQuantity * numPeople;
 
-        if (recipe && Array.isArray(recipe.ingredients)) {
-          recipe.ingredients.forEach((ingredient) => {
-            const key = `${ingredient.name}-${ingredient.unit}`;
-
-            // Sum quantities for each unique ingredient-unit combination
-            if (shoppingList[key]) {
-              shoppingList[key].quantity += parseFloat(ingredient.quantity);
-            } else {
-              shoppingList[key] = {
-                name: ingredient.name,
-                quantity: parseFloat(ingredient.quantity),
-                unit: ingredient.unit,
-              };
+                if (shoppingList[key]) {
+                  shoppingList[key].quantity += adjustedQuantity;
+                } else {
+                  shoppingList[key] = {
+                    name: ingredient.name,
+                    quantity: adjustedQuantity,
+                    unit: ingredient.unit
+                  };
+                }
+              });
             }
-          });
+          } catch (error) {
+            console.error('Error fetching recipe:', error);
+          }
         }
-      });
-    });
+      }
+    }
 
-    return shoppingList;
+    // Round quantities and convert back to an array
+    return Object.values(shoppingList).map(item => ({
+      ...item,
+      quantity: Math.round(item.quantity * 100) / 100 // Round to 2 decimal places
+    }));
   };
 
   // Handle form submission (create or update a meal plan and shopping list)
@@ -124,7 +135,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
       }
 
       // Calculate and save the shopping list
-      const shoppingListData = calculateShoppingList(meals);
+      const shoppingListData = await calculateShoppingList(meals, parseInt(numPeople, 10));
       setShoppingList(shoppingListData);
 
       // Save meal plan data to state for display

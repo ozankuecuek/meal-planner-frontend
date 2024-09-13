@@ -7,12 +7,14 @@ import { TextField, Button, Grid, Typography, Paper, MenuItem } from '@mui/mater
 
 const RecipeForm = ({ editingRecipe }) => {
   const [title, setTitle] = useState('');
+  const [ingredients, setIngredients] = useState([{ name: '', quantity: '', unit: '' }]);
   const [instructions, setInstructions] = useState(['']); // Initialize with one empty step
-  const [ingredients, setIngredients] = useState([]);
-  const [allIngredients, setAllIngredients] = useState([]); // All unique ingredients
-  const [newIngredient, setNewIngredient] = useState({ name: '', quantity: '', unit: 'Stk' });
   const [image, setImage] = useState(null); // State for image upload
   const [user] = useAuthState(auth);
+  const [servings, setServings] = useState('');
+  const [servingsError, setServingsError] = useState('');
+  const [allIngredients, setAllIngredients] = useState([]);
+  const [newIngredient, setNewIngredient] = useState({ name: '', quantity: '', unit: 'Stk' });
 
   // Fetch all unique ingredients from the entire recipe catalog
   const fetchAllIngredients = async () => {
@@ -69,37 +71,57 @@ const RecipeForm = ({ editingRecipe }) => {
   // Handle form submission (create or update a recipe)
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    let imageUrl = '';
-    if (image) {
-      // Upload image to Firebase Storage
-      const imageRef = ref(storage, `recipeImages/${image.name}`);
-      const snapshot = await uploadBytes(imageRef, image);
-      imageUrl = await getDownloadURL(snapshot.ref);
+    if (!validateServings(servings)) {
+      return;
     }
-
-    const recipeData = {
-      title,
-      ingredients,
-      instructions,
-      imageUrl, // Save the image URL in Firestore
-      authorId: user.uid,
-    };
 
     try {
-      // Save new recipe to Firestore
+      let imageUrl = '';
+      if (image) {
+        const storageRef = ref(storage, `recipeImages/${image.name}`);
+        await uploadBytes(storageRef, image);
+        imageUrl = await getDownloadURL(storageRef);
+      }
+
+      const recipeData = {
+        title,
+        ingredients,
+        instructions,
+        imageUrl,
+        servings: parseInt(servings, 10),
+        userId: user.uid,
+        createdAt: new Date()
+      };
+
       await addDoc(collection(db, 'recipes'), recipeData);
-      alert('Recipe added successfully!');
+      alert('Recipe saved successfully!');
+      // Reset form or redirect user
     } catch (error) {
-      console.error('Error adding recipe: ', error);
-      alert('Failed to add recipe');
+      console.error('Error saving recipe: ', error);
+      alert('Failed to save recipe');
     }
+  };
+
+  const validateServings = (value) => {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) {
+      setServingsError('Please enter a number 1 or greater');
+      return false;
+    }
+    setServingsError('');
+    return true;
   };
 
   // Fetch all ingredients on mount
   useEffect(() => {
     fetchAllIngredients();
-  }, []);
+    if (editingRecipe) {
+      setTitle(editingRecipe.title);
+      setIngredients(editingRecipe.ingredients);
+      setInstructions(editingRecipe.instructions);
+      setServings(editingRecipe.servings?.toString() || '');
+    }
+  }, [editingRecipe]);
 
   return (
     <Paper elevation={3} style={{ padding: '16px', maxWidth: '600px', margin: 'auto' }}>
@@ -118,6 +140,24 @@ const RecipeForm = ({ editingRecipe }) => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              label="Number of Servings"
+              variant="outlined"
+              fullWidth
+              value={servings}
+              onChange={(e) => {
+                setServings(e.target.value);
+                validateServings(e.target.value);
+              }}
+              onBlur={() => validateServings(servings)}
+              error={!!servingsError}
+              helperText={servingsError}
+              required
+              type="number"
+              inputProps={{ min: "1" }}
             />
           </Grid>
 
