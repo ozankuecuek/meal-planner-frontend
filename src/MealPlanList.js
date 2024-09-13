@@ -1,93 +1,110 @@
-import React, { useState, useEffect } from 'react';
-import { db } from './firebase'; // Firestore
+import React, { useState, useEffect, useCallback } from 'react';
+import { db, auth } from './firebase';
 import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
-import ShoppingList from './ShoppingList'; // Import the ShoppingList component
-import { Grid, Paper, Typography, Button } from '@mui/material';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { Typography, Button, Grid, Paper } from '@mui/material';
+import ShoppingList from './ShoppingList';
 
 const MealPlanList = () => {
   const [mealPlans, setMealPlans] = useState([]);
-  const [recipes, setRecipes] = useState({}); // Map recipe ID -> recipe title
-  const [shoppingListExists, setShoppingListExists] = useState({}); // To track if shopping list exists
+  const [recipes, setRecipes] = useState({});
+  const [shoppingListExists, setShoppingListExists] = useState({});
+  const [user] = useAuthState(auth);
 
-  // Fetch all meal plans from Firestore
-  const fetchMealPlans = async () => {
+  const fetchMealPlans = useCallback(async () => {
+    if (!user) return;
     try {
-      const mealPlanSnapshot = await getDocs(collection(db, 'mealplans'));
+      const q = query(collection(db, 'mealplans'), where('userId', '==', user.uid));
+      const mealPlanSnapshot = await getDocs(q);
       const fetchedMealPlans = mealPlanSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+      console.log('Fetched meal plans:', fetchedMealPlans);
       setMealPlans(fetchedMealPlans);
     } catch (error) {
       console.error('Error fetching meal plans: ', error);
     }
-  };
+  }, [user]);
 
-  // Fetch all recipes and create a map for recipe ID -> recipe title
-  const fetchRecipes = async () => {
+  const fetchRecipes = useCallback(async () => {
     try {
       const recipeSnapshot = await getDocs(collection(db, 'recipes'));
       const recipeMap = {};
       recipeSnapshot.forEach((doc) => {
         const recipe = doc.data();
-        recipeMap[doc.id] = recipe.title; // Map recipe ID to its title
+        recipeMap[doc.id] = recipe.title;
       });
       setRecipes(recipeMap);
     } catch (error) {
       console.error('Error fetching recipes: ', error);
     }
-  };
+  }, []);
 
-  // Check if shopping list exists for each meal plan
-  const checkShoppingLists = async () => {
+  const checkShoppingLists = useCallback(async () => {
     try {
       const shoppingListMap = {};
       for (let mealPlan of mealPlans) {
         const q = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', mealPlan.id));
         const querySnapshot = await getDocs(q);
-        shoppingListMap[mealPlan.id] = !querySnapshot.empty; // If querySnapshot is not empty, shopping list exists
+        shoppingListMap[mealPlan.id] = !querySnapshot.empty;
       }
       setShoppingListExists(shoppingListMap);
     } catch (error) {
       console.error('Error checking shopping lists:', error);
     }
-  };
+  }, [mealPlans]);
 
-  // Delete meal plan and its shopping list
-  const handleDeleteMealPlan = async (mealPlanId) => {
+  const handleDeleteMealPlan = useCallback(async (mealPlanId) => {
+    if (!user) {
+      alert('You must be logged in to delete meal plans.');
+      return;
+    }
     try {
-      // Delete the meal plan
+      console.log('Attempting to delete meal plan:', mealPlanId);
+      
       await deleteDoc(doc(db, 'mealplans', mealPlanId));
+      console.log('Meal plan deleted successfully');
 
-      // Also delete the corresponding shopping list
       const shoppingListQuery = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', mealPlanId));
       const shoppingListSnapshot = await getDocs(shoppingListQuery);
-      shoppingListSnapshot.forEach((docSnapshot) => {
-        deleteDoc(doc(db, 'shoppinglists', docSnapshot.id)); // Delete each shopping list
-      });
+      const deletePromises = shoppingListSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      console.log('Associated shopping lists deleted');
 
-      // Update state to remove the deleted meal plan
-      setMealPlans(mealPlans.filter((plan) => plan.id !== mealPlanId));
+      setMealPlans(prevMealPlans => prevMealPlans.filter(plan => plan.id !== mealPlanId));
+      console.log('State updated');
 
       alert('Meal plan and its shopping list have been deleted.');
     } catch (error) {
       console.error('Error deleting meal plan: ', error);
-      alert('Failed to delete meal plan.');
+      alert(`Failed to delete meal plan. Error: ${error.message}`);
     }
-  };
+  }, [user, setMealPlans]);
 
-  // Fetch meal plans and recipes when component mounts
   useEffect(() => {
-    fetchMealPlans();
-    fetchRecipes();
-  }, []);
+    console.log('User state changed:', user);
+    if (user) {
+      fetchMealPlans();
+      fetchRecipes();
+    }
+  }, [user, fetchMealPlans, fetchRecipes]);
 
-  // Check for shopping lists whenever meal plans are fetched
   useEffect(() => {
     if (mealPlans.length > 0) {
       checkShoppingLists();
     }
-  }, [mealPlans]);
+  }, [mealPlans, checkShoppingLists]);
+
+  console.log('Rendering MealPlanList, mealPlans:', mealPlans);
+
+  if (!user) {
+    return <Typography>Please log in to view your meal plans.</Typography>;
+  }
+
+  if (mealPlans.length === 0) {
+    return <Typography>You haven't created any meal plans yet.</Typography>;
+  }
 
   return (
     <Grid container spacing={2} style={{ marginTop: '16px' }}>
@@ -95,7 +112,6 @@ const MealPlanList = () => {
         <Grid item xs={12} sm={6} md={4} key={mealPlan.id}>
           <Paper elevation={3} style={{ padding: '16px' }}>
             <Typography variant="h6">{mealPlan.name || `Meal Plan ${mealPlan.id}`}</Typography>
-
             {mealPlan.meals ? (
               Object.keys(mealPlan.meals).map((dayKey, index) => (
                 <div key={index}>
@@ -114,31 +130,17 @@ const MealPlanList = () => {
             ) : (
               <Typography variant="body2">No meals available for this plan</Typography>
             )}
-
-            {/* Show "View Shopping List" button only if shopping list exists */}
-            {shoppingListExists[mealPlan.id] ? (
-              <div>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={() =>
-                    setShoppingListExists({ ...shoppingListExists, [mealPlan.id]: !shoppingListExists[mealPlan.id] })
-                  }
-                  style={{ marginTop: '16px' }}
-                >
-                  {shoppingListExists[mealPlan.id] ? 'Hide Shopping List' : 'View Shopping List'}
-                </Button>
-
-                {/* Show shopping list below the respective meal plan */}
-                {shoppingListExists[mealPlan.id] && <ShoppingList mealPlanId={mealPlan.id} />}
-              </div>
-            ) : (
-              <Typography variant="body2" color="textSecondary" style={{ marginTop: '16px' }}>
-                No shopping list available for this meal plan.
-              </Typography>
+            {shoppingListExists[mealPlan.id] && (
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => setShoppingListExists({ ...shoppingListExists, [mealPlan.id]: !shoppingListExists[mealPlan.id] })}
+                style={{ marginTop: '16px' }}
+              >
+                {shoppingListExists[mealPlan.id] ? 'Hide Shopping List' : 'View Shopping List'}
+              </Button>
             )}
-
-            {/* Delete Meal Plan button */}
+            {shoppingListExists[mealPlan.id] && <ShoppingList mealPlanId={mealPlan.id} />}
             <Button
               variant="outlined"
               color="secondary"

@@ -1,105 +1,47 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme/theme';  // Import the theme from theme.js
-import Navbar from './components/Navbar'; // Import Navbar
-import Login from './Login';
-import Register from './Register';
-import RecipeForm from './RecipeForm'; // Recipe creation and editing
-import RecipeList from './RecipeList'; // Recipe list component
-import MealPlanForm from './MealPlanForm'; // Meal plan creation component
-import MealPlanList from './MealPlanList'; // Meal plan list component
+import { Routes, Route } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase';
-import { Route, Routes } from 'react-router-dom';
-import CookieConsentBanner from './components/CookieConsent';
+import theme from './theme/theme';  // Import the theme from theme.js
+import Navbar from './components/Navbar'; // Import Navbar
+import MealPlanForm from './MealPlanForm'; // Meal plan creation component
+import RecipeList from './RecipeList'; // Recipe list component
+import RecipeForm from './RecipeForm'; // Recipe creation and editing
+import Login from './Login';
+import Register from './Register';
+import MealPlanList from './MealPlanList';
 
 function App() {
-  const [editingRecipe, setEditingRecipe] = useState(null); // For editing recipes
-  const [isRegistering, setIsRegistering] = useState(false); // Define isRegistering state
-  const [user] = useAuthState(auth); // Check authentication status
+  const [editingRecipe, setEditingRecipe] = useState(null);
+  const [user] = useAuthState(auth);
 
-  // Handle when the user clicks "Edit" on a recipe
   const handleEdit = (recipe) => {
     setEditingRecipe(recipe);
   };
 
-  return (
-    <ThemeProvider theme={theme}> {/* Wrap the app with ThemeProvider */}
-      <CssBaseline /> {/* Apply base CSS reset */}
-      
-      {/* Add the Navbar here */}
-      <Navbar user={user} /> {/* Pass user prop to Navbar */}
+  const handleSubmit = () => {
+    setEditingRecipe(null);
+    // Optionally, you can refresh the recipe list here
+  };
 
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Navbar user={user} />
       <div style={{ padding: '16px', maxWidth: '1200px', margin: 'auto' }}>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<MealPlanForm onEdit={handleEdit} />} />
+          <Route path="/" element={<MealPlanForm />} />
           <Route path="/recipes" element={<RecipeList onEdit={handleEdit} />} />
+          <Route path="/recipes/new" element={<RecipeForm />} />
+          <Route path="/recipes/edit/:id" element={<RecipeForm editingRecipe={editingRecipe} onSubmit={handleSubmit} />} />
           <Route path="/mealplans/new" element={<MealPlanForm />} />
-          <Route
-            path="/login"
-            element={
-              <>
-                <Login />
-                <p>
-                  Don't have an account?{' '}
-                  <button onClick={() => setIsRegistering(true)}>Register</button>
-                </p>
-              </>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <>
-                <Register />
-                <p>
-                  Already have an account?{' '}
-                  <button onClick={() => setIsRegistering(false)}>Login</button>
-                </p>
-              </>
-            }
-          />
-
-          {/* Protected Routes */}
-          {user ? (
-            <>
-              <Route path="/recipes/new" element={<RecipeForm editingRecipe={editingRecipe} />} />
-              <Route path="/mealplans" element={<MealPlanList />} />
-            </>
-          ) : (
-            <>
-              {/* Redirect to login if not authenticated */}
-              <Route
-                path="/recipes/new"
-                element={
-                  <>
-                    <Login />
-                    <p>
-                      Don't have an account?{' '}
-                      <button onClick={() => setIsRegistering(true)}>Register</button>
-                    </p>
-                  </>
-                }
-              />
-              <Route
-                path="/mealplans"
-                element={
-                  <>
-                    <Login />
-                    <p>
-                      Don't have an account?{' '}
-                      <button onClick={() => setIsRegistering(true)}>Register</button>
-                    </p>
-                  </>
-                }
-              />
-            </>
-          )}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/mealplans" element={<MealPlanList />} />
         </Routes>
       </div>
-      <CookieConsentBanner />
     </ThemeProvider>
   );
 }
