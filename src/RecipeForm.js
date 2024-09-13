@@ -71,7 +71,8 @@ const RecipeForm = ({ editingRecipe }) => {
   // Handle form submission (create or update a recipe)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateServings(servings)) {
+    if (!user) {
+      alert('You must be logged in to save a recipe');
       return;
     }
 
