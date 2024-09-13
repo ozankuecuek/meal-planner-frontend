@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { db, auth, storage } from './firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { TextField, Button, Grid, Typography, Paper } from '@mui/material';
+import { TextField, Button, Grid, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import IngredientCatalog from './components/IngredientCatalog';
 
 const RecipeForm = () => {
   const [title, setTitle] = useState('');
@@ -11,6 +12,8 @@ const RecipeForm = () => {
   const [instructions, setInstructions] = useState(['']);
   const [image, setImage] = useState(null);
   const [user] = useAuthState(auth);
+  const [ingredientCatalogOpen, setIngredientCatalogOpen] = useState(false);
+  const [currentIngredientIndex, setCurrentIngredientIndex] = useState(null);
 
   const addIngredient = () => {
     setIngredients([...ingredients, { name: '', quantity: '', unit: '' }]);
@@ -84,6 +87,20 @@ const RecipeForm = () => {
     }
   };
 
+  const handleOpenIngredientCatalog = (index) => {
+    setCurrentIngredientIndex(index);
+    setIngredientCatalogOpen(true);
+  };
+
+  const handleCloseIngredientCatalog = () => {
+    setIngredientCatalogOpen(false);
+  };
+
+  const handleSelectIngredient = (selectedIngredient) => {
+    updateIngredient(currentIngredientIndex, 'name', selectedIngredient);
+    setIngredientCatalogOpen(false);
+  };
+
   return (
     <Paper elevation={3} style={{ padding: '16px', maxWidth: '600px', margin: 'auto', marginBottom: '20px' }}>
       <Typography variant="h5" gutterBottom>
@@ -112,7 +129,10 @@ const RecipeForm = () => {
                     variant="outlined"
                     fullWidth
                     value={ingredient.name}
-                    onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                    onClick={() => handleOpenIngredientCatalog(index)}
+                    InputProps={{
+                      readOnly: true,
+                    }}
                     required
                   />
                 </Grid>
@@ -127,14 +147,20 @@ const RecipeForm = () => {
                   />
                 </Grid>
                 <Grid item xs={3}>
-                  <TextField
-                    label="Unit"
-                    variant="outlined"
-                    fullWidth
-                    value={ingredient.unit}
-                    onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                    required
-                  />
+                  <FormControl variant="outlined" fullWidth required>
+                    <InputLabel>Unit</InputLabel>
+                    <Select
+                      value={ingredient.unit}
+                      onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
+                      label="Unit"
+                    >
+                      <MenuItem value="Stk">Stk</MenuItem>
+                      <MenuItem value="EL">EL</MenuItem>
+                      <MenuItem value="TL">TL</MenuItem>
+                      <MenuItem value="ml">ml</MenuItem>
+                      <MenuItem value="g">g</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={2}>
                   <Button onClick={() => removeIngredient(index)}>Remove</Button>
@@ -186,6 +212,11 @@ const RecipeForm = () => {
           </Grid>
         </Grid>
       </form>
+      <IngredientCatalog
+        open={ingredientCatalogOpen}
+        onClose={handleCloseIngredientCatalog}
+        onSelect={handleSelectIngredient}
+      />
     </Paper>
   );
 };
