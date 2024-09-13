@@ -7,17 +7,29 @@ import { v4 as uuidv4 } from 'uuid';
 import MealPlanSummary from './MealPlanSummary';
 import { analytics } from './firebase';
 import { logEvent } from "firebase/analytics";
+import RecipeSelector from './components/RecipeSelector';
 
 const MealPlanForm = ({ editingMealPlan }) => {
   const [mealPlanName, setMealPlanName] = useState('');
   const [numDays, setNumDays] = useState(1);
-  const [meals, setMeals] = useState({ day1: { breakfast: '', lunch: '', dinner: '' } });
+  const [numPeople, setNumPeople] = useState('1');
+  const [numPeopleError, setNumPeopleError] = useState('');
+  const [meals, setMeals] = useState(() => {
+    const initialMeals = {};
+    for (let i = 0; i < numDays; i++) {
+      initialMeals[`day${i + 1}`] = { breakfast: null, lunch: null, dinner: null };
+    }
+    return initialMeals;
+  });
   const [recipes, setRecipes] = useState([]);
   const [user] = useAuthState(auth);
   const [sessionId, setSessionId] = useState(null);
   const [mealPlanId, setMealPlanId] = useState(null);
   const [mealPlanData, setMealPlanData] = useState(null);
   const [shoppingList, setShoppingList] = useState(null);
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [currentMealType, setCurrentMealType] = useState('');
+  const [currentDay, setCurrentDay] = useState('');
 
   // Initialize meal plan structure dynamically based on the number of days
   const initializeMeals = (days) => {
@@ -86,10 +98,15 @@ const MealPlanForm = ({ editingMealPlan }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateNumPeople(numPeople)) {
+      return;
+    }
+
     try {
       const mealPlan = {
         name: mealPlanName,
         meals,
+        numPeople: parseInt(numPeople, 10),
         createdAt: new Date(),
         ...(user ? { userId: user.uid } : { sessionId }),
       };
@@ -145,6 +162,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
       setMealPlanName(editingMealPlan.name);
       setNumDays(Object.keys(editingMealPlan.meals).length);
       setMeals(editingMealPlan.meals);
+      setNumPeople(editingMealPlan.numPeople?.toString() || '1');
     }
   }, [editingMealPlan]);
 
@@ -165,6 +183,40 @@ const MealPlanForm = ({ editingMealPlan }) => {
     return recipe ? recipe.title : 'No selection';
   };
 
+  const handleOpenSelector = (day, mealType) => {
+    console.log('Opening selector for day:', day, 'meal:', mealType);
+    setCurrentDay(day);
+    setCurrentMealType(mealType);
+    setSelectorOpen(true);
+  };
+
+  const handleCloseSelector = () => {
+    setSelectorOpen(false);
+  };
+
+  const handleSelectRecipe = (recipeId) => {
+    console.log('Selecting recipe:', recipeId, 'for day:', currentDay, 'meal:', currentMealType);
+    setMeals(prevMeals => {
+      const newMeals = {
+        ...prevMeals,
+        [currentDay]: { ...prevMeals[currentDay], [currentMealType]: recipeId },
+      };
+      console.log('Updated meals:', newMeals);
+      return newMeals;
+    });
+    setSelectorOpen(false);
+  };
+
+  const validateNumPeople = (value) => {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) {
+      setNumPeopleError('Please enter a number 1 or greater');
+      return false;
+    }
+    setNumPeopleError('');
+    return true;
+  };
+
   return (
     <Paper elevation={3} style={{ padding: '16px', maxWidth: '600px', margin: 'auto' }}>
       <Typography variant="h5" gutterBottom>
@@ -181,6 +233,25 @@ const MealPlanForm = ({ editingMealPlan }) => {
               value={mealPlanName}
               onChange={(e) => setMealPlanName(e.target.value)}
               required
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              label="Number of People"
+              variant="outlined"
+              fullWidth
+              value={numPeople}
+              onChange={(e) => {
+                setNumPeople(e.target.value);
+                validateNumPeople(e.target.value);
+              }}
+              onBlur={() => validateNumPeople(numPeople)}
+              error={!!numPeopleError}
+              helperText={numPeopleError}
+              required
+              type="number"
+              inputProps={{ min: "1" }}
             />
           </Grid>
 
@@ -205,28 +276,23 @@ const MealPlanForm = ({ editingMealPlan }) => {
               <Typography variant="h6">{`Day ${index + 1}`}</Typography>
 
               {['breakfast', 'lunch', 'dinner'].map((mealType) => (
-                <TextField
-                  key={mealType}
-                  select
-                  label={mealType.charAt(0).toUpperCase() + mealType.slice(1)}
-                  variant="outlined"
-                  fullWidth
-                  value={meals[dayKey][mealType]}
-                  onChange={(e) =>
-                    setMeals({
-                      ...meals,
-                      [dayKey]: { ...meals[dayKey], [mealType]: e.target.value },
-                    })
-                  }
-                  style={{ marginTop: '8px' }}
-                >
-                  <MenuItem value="">Select a recipe</MenuItem>
-                  {recipes.map((recipe) => (
-                    <MenuItem key={recipe.id} value={recipe.id}>
-                      {recipe.title}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <div key={mealType}>
+                  <Typography variant="body1">
+                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)}:
+                    {meals[dayKey][mealType] ? (
+                      ` ${getRecipeTitleById(meals[dayKey][mealType])}`
+                    ) : (
+                      ' No selection'
+                    )}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleOpenSelector(dayKey, mealType)}
+                    style={{ marginTop: '8px', marginBottom: '8px' }}
+                  >
+                    {meals[dayKey][mealType] ? 'Change Recipe' : 'Select Recipe'}
+                  </Button>
+                </div>
               ))}
             </Grid>
           ))}
@@ -244,6 +310,13 @@ const MealPlanForm = ({ editingMealPlan }) => {
           </Grid>
         </Grid>
       </form>
+
+      <RecipeSelector
+        open={selectorOpen}
+        onClose={handleCloseSelector}
+        recipes={recipes}
+        onSelect={handleSelectRecipe}
+      />
     </Paper>
   );
 };
