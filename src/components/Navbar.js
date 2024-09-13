@@ -12,9 +12,10 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase';
-import { Link } from 'react-scroll'; // For smooth scrolling
+import { Link as RouterLink } from 'react-router-dom'; // Use RouterLink for routing
 import useMediaQuery from '@mui/material/useMediaQuery'; // For responsiveness
 import { useTheme } from '@mui/material/styles'; // To access the current theme
+import ListItemText from '@mui/material/ListItemText'; // For better list item text
 
 function Navbar() {
   const [user] = useAuthState(auth); // Check authentication status
@@ -27,55 +28,40 @@ function Navbar() {
     setDrawerOpen(open);
   };
 
+  // Define menu items based on authentication status
   const menuItems = (
     <List>
-      <ListItem>
-        <Link
-          to="create-recipe"
-          smooth={true}
-          duration={500}
-          spy={true}
-          offset={-70}
-          onClick={toggleDrawer(false)} // Close drawer after clicking
-        >
-          Create a Recipe
-        </Link>
+      {/* Public Links */}
+      <ListItem button component={RouterLink} to="/recipes" onClick={toggleDrawer(false)}>
+        <ListItemText primary="Recipes" />
       </ListItem>
-      <ListItem>
-        <Link
-          to="recipes"
-          smooth={true}
-          duration={500}
-          spy={true}
-          offset={-70}
-          onClick={toggleDrawer(false)}
-        >
-          Recipes
-        </Link>
+      <ListItem button component={RouterLink} to="/mealplans/new" onClick={toggleDrawer(false)}>
+        <ListItemText primary="Create a Meal Plan" />
       </ListItem>
+
+      {/* Protected Links (only visible to authenticated users) */}
+      {user && (
+        <>
+          <ListItem button component={RouterLink} to="/recipes/new" onClick={toggleDrawer(false)}>
+            <ListItemText primary="Create a Recipe" />
+          </ListItem>
+          <ListItem button component={RouterLink} to="/mealplans" onClick={toggleDrawer(false)}>
+            <ListItemText primary="My Meal Plans" />
+          </ListItem>
+        </>
+      )}
+
+      {/* Authentication Button */}
       <ListItem>
-        <Link
-          to="create-mealplan"
-          smooth={true}
-          duration={500}
-          spy={true}
-          offset={-70}
-          onClick={toggleDrawer(false)}
-        >
-          Create a Meal Plan
-        </Link>
-      </ListItem>
-      <ListItem>
-        <Link
-          to="mealplans"
-          smooth={true}
-          duration={500}
-          spy={true}
-          offset={-70}
-          onClick={toggleDrawer(false)}
-        >
-          My Meal Plans
-        </Link>
+        {user ? (
+          <Button color="inherit" onClick={() => auth.signOut()}>
+            Logout
+          </Button>
+        ) : (
+          <Button color="inherit" component={RouterLink} to="/login" onClick={toggleDrawer(false)}>
+            Login
+          </Button>
+        )}
       </ListItem>
     </List>
   );
@@ -92,76 +78,46 @@ function Navbar() {
           {isMobile ? (
             // Show burger menu on mobile
             <>
-              <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)}>
+              <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)} aria-label="menu">
                 <MenuIcon />
               </IconButton>
               <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
                 {menuItems}
-                <ListItem>
-                  {user ? (
-                    <Button color="inherit" onClick={() => auth.signOut()}>
-                      Logout
-                    </Button>
-                  ) : (
-                    <Button color="inherit">Login</Button>
-                  )}
-                </ListItem>
               </Drawer>
             </>
           ) : (
             // Show regular buttons on desktop
             <>
+              {/* Public Links */}
+              <Button color="inherit" component={RouterLink} to="/recipes">
+                Recipes
+              </Button>
+              <Button color="inherit" component={RouterLink} to="/mealplans/new">
+                Create a Meal Plan
+              </Button>
+
+              {/* Protected Links */}
               {user && (
                 <>
-                  <Button color="inherit">
-                    <Link
-                      to="create-recipe"
-                      smooth={true}
-                      duration={500}
-                      spy={true}
-                      offset={-70}
-                    >
-                      Create a Recipe
-                    </Link>
+                  <Button color="inherit" component={RouterLink} to="/recipes/new">
+                    Create a Recipe
                   </Button>
-                  <Button color="inherit">
-                    <Link
-                      to="recipes"
-                      smooth={true}
-                      duration={500}
-                      spy={true}
-                      offset={-70}
-                    >
-                      Recipes
-                    </Link>
-                  </Button>
-                  <Button color="inherit">
-                    <Link
-                      to="create-mealplan"
-                      smooth={true}
-                      duration={500}
-                      spy={true}
-                      offset={-70}
-                    >
-                      Create a Meal Plan
-                    </Link>
-                  </Button>
-                  <Button color="inherit">
-                    <Link
-                      to="mealplans"
-                      smooth={true}
-                      duration={500}
-                      spy={true}
-                      offset={-70}
-                    >
-                      My Meal Plans
-                    </Link>
+                  <Button color="inherit" component={RouterLink} to="/mealplans">
+                    My Meal Plans
                   </Button>
                 </>
               )}
-              <Button color="inherit" onClick={() => auth.signOut()}>
-                Logout
-              </Button>
+
+              {/* Authentication Button */}
+              {user ? (
+                <Button color="inherit" onClick={() => auth.signOut()}>
+                  Logout
+                </Button>
+              ) : (
+                <Button color="inherit" component={RouterLink} to="/login">
+                  Login
+                </Button>
+              )}
             </>
           )}
         </Toolbar>

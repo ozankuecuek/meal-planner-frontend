@@ -11,21 +11,34 @@ const RecipeList = ({ onEdit }) => {
   // Fetch recipes from Firestore
   useEffect(() => {
     const fetchRecipes = async () => {
-      const querySnapshot = await getDocs(collection(db, 'recipes'));
-      const recipesList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setRecipes(recipesList);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'recipes'));
+        const recipesList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setRecipes(recipesList);
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+      }
     };
     fetchRecipes();
   }, []);
 
   // Function to delete a recipe
   const handleDelete = async (recipeId) => {
-    await deleteDoc(doc(db, 'recipes', recipeId));
-    alert('Recipe deleted successfully!');
-    setRecipes(recipes.filter((recipe) => recipe.id !== recipeId)); // Update state to remove deleted recipe
+    if (!user) {
+      alert('You must be logged in to delete recipes.');
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'recipes', recipeId));
+      alert('Recipe deleted successfully!');
+      setRecipes(recipes.filter((recipe) => recipe.id !== recipeId)); // Update state to remove deleted recipe
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      alert('Failed to delete recipe.');
+    }
   };
 
   return (
@@ -36,26 +49,30 @@ const RecipeList = ({ onEdit }) => {
             <Typography variant="h6">{recipe.title}</Typography>
 
             {/* Render the ingredients */}
-            <Typography variant="body2" style={{ marginTop: '8px' }}>
-              <strong>Ingredients:</strong>
-              <ul>
-                {Array.isArray(recipe.ingredients) && recipe.ingredients.map((ingredient, index) => (
-                  <li key={index}>
-                    {ingredient.name} - {ingredient.quantity} {ingredient.unit}
-                  </li>
-                ))}
-              </ul>
-            </Typography>
+            {Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 && (
+              <Typography variant="body2" style={{ marginTop: '8px' }}>
+                <strong>Ingredients:</strong>
+                <ul>
+                  {recipe.ingredients.map((ingredient, index) => (
+                    <li key={index}>
+                      {ingredient.name} - {ingredient.quantity} {ingredient.unit}
+                    </li>
+                  ))}
+                </ul>
+              </Typography>
+            )}
 
             {/* Render the instructions */}
-            <Typography variant="body2" style={{ marginTop: '8px' }}>
-              <strong>Instructions:</strong>
-              <ul>
-                {Array.isArray(recipe.instructions) && recipe.instructions.map((step, index) => (
-                  <li key={index}>Step {index + 1}: {step}</li>
-                ))}
-              </ul>
-            </Typography>
+            {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 && (
+              <Typography variant="body2" style={{ marginTop: '8px' }}>
+                <strong>Instructions:</strong>
+                <ul>
+                  {recipe.instructions.map((step, index) => (
+                    <li key={index}>Step {index + 1}: {step}</li>
+                  ))}
+                </ul>
+              </Typography>
+            )}
 
             {/* Render the image if it exists */}
             {recipe.imageUrl && (

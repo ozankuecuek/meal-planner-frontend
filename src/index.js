@@ -3,8 +3,13 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { hasCookieConsent, setAnalyticsCookies } from './utils/cookieConsent';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+if (hasCookieConsent()) {
+  setAnalyticsCookies();
+  // Initialize your analytics service here
+}
 root.render(
   <React.StrictMode>
     <App />
