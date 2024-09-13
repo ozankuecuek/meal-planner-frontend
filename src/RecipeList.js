@@ -3,7 +3,7 @@ import { db, auth } from './firebase';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Grid, Paper, Typography, Button } from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const RecipeList = ({ onEdit }) => {
   const [recipes, setRecipes] = useState([]);
@@ -45,15 +45,6 @@ const RecipeList = ({ onEdit }) => {
 
   return (
     <div>
-      <Button
-        component={Link}
-        to="/recipes/new"
-        variant="contained"
-        color="primary"
-        style={{ marginBottom: '20px' }}
-      >
-        Create New Recipe
-      </Button>
       <Grid container spacing={2}>
         {recipes.map((recipe) => (
           <Grid item xs={12} sm={6} md={4} key={recipe.id}>
