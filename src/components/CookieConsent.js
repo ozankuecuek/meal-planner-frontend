@@ -1,6 +1,7 @@
 import React from 'react';
 import CookieConsent from 'react-cookie-consent';
 import Cookies from 'js-cookie';
+import { Link as RouterLink } from 'react-router-dom';
 
 const CookieConsentBanner = () => {
   return (
@@ -20,9 +21,11 @@ const CookieConsentBanner = () => {
         Cookies.set('cookieConsent', 'false', { expires: 150 });
       }}
     >
-      This website uses cookies to enhance the user experience.{" "}
+      Diese Website verwendet Cookies für Analysezwecke, um die Benutzererfahrung zu verbessern.{" "}
       <span style={{ fontSize: "10px" }}>
-        <a href="/privacy-policy">Learn more</a>
+        <Link component={RouterLink} to="/privacy-policy" color="inherit">
+          Mehr erfahren
+        </Link>
       </span>
     </CookieConsent>
   );

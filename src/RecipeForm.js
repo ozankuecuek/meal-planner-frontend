@@ -3,9 +3,10 @@ import { db, auth, storage } from './firebase';
 import { collection, addDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { TextField, Button, Grid, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { TextField, Button, Grid, Typography, Paper, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import JsonRecipeInput from './components/Recipe/JsonRecipeInput'; // Add this line
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const RezeptFormular = ({ editingRecipe, onSubmit }) => {
   const [titel, setTitel] = useState('');
