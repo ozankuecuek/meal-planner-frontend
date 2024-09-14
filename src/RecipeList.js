@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { Grid, Typography, Button, CardContent, CardActions, Card } from '@mui/material';
+import { Grid, Typography, Button, CardContent, CardActions, Card, CardMedia, Box, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 const RecipeList = ({ onEdit }) => {
   const [recipes, setRecipes] = useState([]);
@@ -60,30 +62,45 @@ const RecipeList = ({ onEdit }) => {
         <Grid item xs={12} sm={6} md={4} key={recipe.id}>
           <Card 
             onClick={() => handleCardClick(recipe.id)}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column' }}
+            elevation={3}
           >
-            <CardContent>
-              <Typography variant="h6" component="div">
+            <CardMedia
+              component="img"
+              height="200"
+              image={recipe.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}
+              alt={recipe.title}
+            />
+            <CardContent style={{ flexGrow: 1 }}>
+              <Typography variant="h6" component="div" gutterBottom>
                 {recipe.title}
               </Typography>
-              {recipe.imageUrl && (
-                <img
-                  src={recipe.imageUrl}
-                  alt={recipe.title}
-                  style={{ width: '100%', height: 'auto', marginTop: '8px' }}
-                />
-              )}
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                {recipe.prepTime && (
+                  <Chip icon={<AccessTimeIcon />} label={`Prep: ${recipe.prepTime}`} size="small" />
+                )}
+                {recipe.cookTime && (
+                  <Chip icon={<RestaurantIcon />} label={`Cook: ${recipe.cookTime}`} size="small" />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {recipe.description ? (
+                  recipe.description.length > 100 ? 
+                    `${recipe.description.substring(0, 100)}...` : 
+                    recipe.description
+                ) : 'No description available'}
+              </Typography>
             </CardContent>
             {user && user.uid === recipe.userId && (
               <CardActions>
-                <Button size="small" onClick={(e) => handleEdit(e, recipe)}>
-                  Bearbeiten
+                <Button size="small" color="primary" onClick={(e) => handleEdit(e, recipe)}>
+                  Edit
                 </Button>
-                <Button size="small" onClick={(e) => {
+                <Button size="small" color="secondary" onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(recipe.id);
                 }}>
-                  Löschen
+                  Delete
                 </Button>
               </CardActions>
             )}

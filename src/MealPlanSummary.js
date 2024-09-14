@@ -1,6 +1,20 @@
 // MealPlanSummary.js
 import React from 'react';
-import { Typography, Paper } from '@mui/material';
+import { Typography, Paper, Grid, Box, Divider, List, ListItem, ListItemText, Container } from '@mui/material';
+import { styled } from '@mui/system';
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(4),
+  marginTop: theme.spacing(3),
+  borderRadius: theme.shape.borderRadius,
+}));
+
+const ItemCard = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.background.default,
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(2),
+  height: '100%',
+}));
 
 const MealPlanSummary = ({ mealPlanId, mealPlanData, shoppingList, recipes }) => {
   // Helper function to get recipe title by ID
@@ -10,35 +24,53 @@ const MealPlanSummary = ({ mealPlanId, mealPlanData, shoppingList, recipes }) =>
   };
 
   return (
-    <Paper elevation={3} style={{ padding: '16px', marginTop: '16px' }}>
-      <Typography variant="h5">{mealPlanData.name}</Typography>
+    <Container maxWidth="xl">
+      <StyledPaper elevation={3}>
+        <Typography variant="h4" gutterBottom>{mealPlanData.name}</Typography>
+        <Divider sx={{ my: 3 }} />
 
-      <Typography variant="h6" style={{ marginTop: '16px' }}>
-        Meal Plan
-      </Typography>
-      {Object.keys(mealPlanData.meals).map((dayKey, index) => {
-        const dayMeals = mealPlanData.meals[dayKey];
-        return (
-          <div key={index} style={{ marginTop: '8px' }}>
-            <Typography variant="subtitle1">{`Day ${index + 1}`}</Typography>
-            <Typography variant="body2">Breakfast: {getRecipeTitleById(dayMeals.breakfast)}</Typography>
-            <Typography variant="body2">Lunch: {getRecipeTitleById(dayMeals.lunch)}</Typography>
-            <Typography variant="body2">Dinner: {getRecipeTitleById(dayMeals.dinner)}</Typography>
-          </div>
-        );
-      })}
+        <Typography variant="h5" gutterBottom>Meal Plan</Typography>
+        <List>
+          {Object.keys(mealPlanData.meals).map((dayKey, index) => {
+            const dayMeals = mealPlanData.meals[dayKey];
+            return (
+              <ListItem key={index}>
+                <ListItemText
+                  primary={`Day ${index + 1}`}
+                  secondary={
+                    <>
+                      <Typography component="span" variant="body2" display="block">
+                        Breakfast: {getRecipeTitleById(dayMeals.breakfast)}
+                      </Typography>
+                      <Typography component="span" variant="body2" display="block">
+                        Lunch: {getRecipeTitleById(dayMeals.lunch)}
+                      </Typography>
+                      <Typography component="span" variant="body2" display="block">
+                        Dinner: {getRecipeTitleById(dayMeals.dinner)}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
+            );
+          })}
+        </List>
 
-      <Typography variant="h6" style={{ marginTop: '16px' }}>
-        Shopping List
-      </Typography>
-      <ul>
-        {Object.values(shoppingList).map((item, index) => (
-          <li key={index}>
-            {item.name}: {item.quantity} {item.unit}
-          </li>
-        ))}
-      </ul>
-    </Paper>
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="h5" gutterBottom>Shopping List</Typography>
+        <List>
+          {Object.values(shoppingList).map((item, index) => (
+            <ListItem key={index}>
+              <ListItemText
+                primary={item.name}
+                secondary={`${item.quantity} ${item.unit}`}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </StyledPaper>
+    </Container>
   );
 };
 

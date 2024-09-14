@@ -2,8 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, auth } from './firebase';
 import { collection, getDocs, query, where, deleteDoc, doc, documentId } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { Typography, Button, Grid, Paper } from '@mui/material';
-import EinkaufsListe from './EinkaufsListe';
+import { Typography, Button, Grid, Paper, Box, Divider, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ShoppingList from './ShoppingList';
 import { generateMealPlanPDF } from './utils/pdfGenerator';
 
@@ -130,69 +133,73 @@ const EssensplanListe = () => {
 
   console.log('Rendering EssensplanListe, essensPlaene:', essensPlaene);
 
-  if (!user) {
-    return <Typography>Bitte melden Sie sich an, um Ihre Essenspläne zu sehen.</Typography>;
-  }
-
-  if (essensPlaene.length === 0) {
-    return <Typography>Sie haben noch keine Essenspläne erstellt.</Typography>;
-  }
-
   return (
-    <Grid container spacing={2} style={{ marginTop: '16px' }}>
-      {essensPlaene.map((essensplan) => (
-        <Grid item xs={12} sm={6} md={4} key={essensplan.id}>
-          <Paper elevation={3} style={{ padding: '16px' }}>
-            <Typography variant="h6">{essensplan.name || `Essensplan ${essensplan.id}`}</Typography>
-            {essensplan.meals ? (
-              Object.keys(essensplan.meals).map((tagKey, index) => (
-                <div key={index}>
-                  <Typography variant="subtitle1">{`Tag ${index + 1}`}</Typography>
-                  <Typography variant="body2">
-                    <strong>Frühstück:</strong> {rezepte[essensplan.meals[tagKey].breakfast] || 'Nicht ausgewählt'}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Mittagessen:</strong> {rezepte[essensplan.meals[tagKey].lunch] || 'Nicht ausgewählt'}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Abendessen:</strong> {rezepte[essensplan.meals[tagKey].dinner] || 'Nicht ausgewählt'}
-                  </Typography>
-                </div>
-              ))
-            ) : (
-              <Typography variant="body2">Keine Mahlzeiten für diesen Plan verfügbar</Typography>
-            )}
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={() => toggleShoppingList(essensplan.id)}
-              style={{ marginTop: '16px' }}
-            >
-              {openShoppingList[essensplan.id] ? 'Einkaufsliste ausblenden' : 'Einkaufsliste anzeigen'}
-            </Button>
-            {openShoppingList[essensplan.id] && (
-              <ShoppingList mealPlanId={essensplan.id} />
-            )}
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={() => handleDownload(essensplan)}
-              style={{ marginTop: '16px' }}
-            >
-              PDF herunterladen
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={() => essensplanLoeschen(essensplan.id)}
-              style={{ marginTop: '16px' }}
-            >
-              Versorgungsplan löschen
-            </Button>
-          </Paper>
-        </Grid>
-      ))}
-    </Grid>
+    <Box sx={{ padding: 4 }}>
+      <Typography variant="h4" gutterBottom>Ihre Versorgungspläne</Typography>
+      {!user && (
+        <Typography>Bitte melden Sie sich an, um Ihre Essenspläne zu sehen.</Typography>
+      )}
+      {user && essensPlaene.length === 0 && (
+        <Typography>Sie haben noch keine Essenspläne erstellt.</Typography>
+      )}
+      <Grid container spacing={4}>
+        {essensPlaene.map((essensplan) => (
+          <Grid item xs={12} key={essensplan.id}>
+            <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+              <Box sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6">{essensplan.name || `Essensplan ${essensplan.id}`}</Typography>
+                <Box>
+                  <Tooltip title="Einkaufsliste">
+                    <IconButton color="inherit" onClick={() => toggleShoppingList(essensplan.id)}>
+                      <ShoppingCartIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="PDF herunterladen">
+                    <IconButton color="inherit" onClick={() => handleDownload(essensplan)}>
+                      <PictureAsPdfIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Löschen">
+                    <IconButton color="inherit" onClick={() => essensplanLoeschen(essensplan.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+              <Box sx={{ p: 3 }}>
+                {essensplan.meals ? (
+                  Object.keys(essensplan.meals).map((tagKey, index) => (
+                    <Accordion key={index} sx={{ mb: 2 }}>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography variant="subtitle1">{`Tag ${index + 1}`}</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography variant="body1" paragraph>
+                          <strong>Frühstück:</strong> {rezepte[essensplan.meals[tagKey].breakfast] || 'Nicht ausgewählt'}
+                        </Typography>
+                        <Typography variant="body1" paragraph>
+                          <strong>Mittagessen:</strong> {rezepte[essensplan.meals[tagKey].lunch] || 'Nicht ausgewählt'}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Abendessen:</strong> {rezepte[essensplan.meals[tagKey].dinner] || 'Nicht ausgewählt'}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))
+                ) : (
+                  <Typography variant="body1">Keine Mahlzeiten für diesen Plan verfügbar</Typography>
+                )}
+              </Box>
+              {openShoppingList[essensplan.id] && (
+                <Box sx={{ p: 3, bgcolor: 'grey.100' }}>
+                  <ShoppingList mealPlanId={essensplan.id} />
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
 };
 

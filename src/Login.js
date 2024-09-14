@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from './firebase'; // Ensure correct path to your firebase.js
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { TextField, Button, Grid, Typography, Paper, Alert } from '@mui/material';
+import { TextField, Button, Grid, Typography, Paper, Alert, Box, Divider, Link } from '@mui/material';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import { useNavigate, Link as RouterLink } from 'react-router-dom'; // Import useNavigate for redirection
+import GoogleIcon from '@mui/icons-material/Google';
 
 const Login = () => {
   const [email, setEmail] = useState(''); // State for email input
@@ -59,19 +60,27 @@ const Login = () => {
   }
 
   return (
-    <Grid container justifyContent="center" style={{ marginTop: '50px' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#f5f5f5',
+      }}
+    >
       <Grid item xs={11} sm={8} md={6} lg={4}>
-        <Paper elevation={3} style={{ padding: '32px' }}>
-          <Typography variant="h5" gutterBottom>
+        <Paper elevation={6} sx={{ padding: '32px', borderRadius: '16px' }}>
+          <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 'bold', mb: 3 }}>
             Anmelden
           </Typography>
 
           {/* Display authentication errors */}
-          {error && <Alert severity="error">{error.message}</Alert>}
-          {formError && <Alert severity="error">{formError}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error.message}</Alert>}
+          {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
 
           <form onSubmit={handleLogin}>
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               {/* Email Field */}
               <Grid item xs={12}>
                 <TextField
@@ -82,6 +91,7 @@ const Login = () => {
                   fullWidth
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                 />
               </Grid>
 
@@ -95,6 +105,7 @@ const Login = () => {
                   fullWidth
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                 />
               </Grid>
 
@@ -105,6 +116,8 @@ const Login = () => {
                   variant="contained"
                   color="primary"
                   fullWidth
+                  size="large"
+                  sx={{ borderRadius: '8px', py: 1.5 }}
                 >
                   Anmelden
                 </Button>
@@ -113,23 +126,35 @@ const Login = () => {
           </form>
 
           {/* Divider */}
-          <Typography align="center" variant="body1" style={{ margin: '16px 0' }}>
-            ODER
-          </Typography>
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="textSecondary">
+              ODER
+            </Typography>
+          </Divider>
 
           {/* Google Sign-In Button */}
           <Button 
             variant="outlined" 
-            color="secondary" 
+            color="primary" 
             fullWidth 
             onClick={handleGoogleSignIn} 
-            style={{ marginTop: '16px' }}
+            startIcon={<GoogleIcon />}
+            size="large"
+            sx={{ borderRadius: '8px', py: 1.5, mb: 2 }}
           >
             Mit Google anmelden
           </Button>
+
+          {/* Registration Link */}
+          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+            Noch kein Konto?{' '}
+            <Link component={RouterLink} to="/registrieren" color="primary">
+              Jetzt registrieren
+            </Link>
+          </Typography>
         </Paper>
       </Grid>
-    </Grid>
+    </Box>
   );
 };
 

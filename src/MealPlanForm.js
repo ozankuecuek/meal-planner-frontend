@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { TextField, Button, Grid, Typography, Paper, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { TextField, Button, Grid, Typography, Paper, MenuItem, Select, FormControl, InputLabel, Card, CardContent, Divider, Box } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
 import MealPlanSummary from './MealPlanSummary';
 import { analytics } from './firebase';
 import { logEvent } from "firebase/analytics";
 import RecipeSelector from './components/RecipeSelector';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import EditIcon from '@mui/icons-material/Edit';
 
 const MealPlanForm = ({ editingMealPlan }) => {
   const [mealPlanName, setMealPlanName] = useState('');
@@ -230,13 +232,13 @@ const MealPlanForm = ({ editingMealPlan }) => {
   };
 
   return (
-    <Paper elevation={3} style={{ padding: '16px', maxWidth: '600px', margin: 'auto' }}>
-      <Typography variant="h5" gutterBottom>
+    <Paper elevation={3} sx={{ p: 4, maxWidth: '800px', margin: 'auto', borderRadius: 2 }}>
+      <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
         {editingMealPlan ? 'Versorgungsplan bearbeiten' : 'Versorgungsplan erstellen'}
       </Typography>
 
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           <Grid item xs={12}>
             <TextField
               label="Name des Versorgungsplans"
@@ -245,10 +247,11 @@ const MealPlanForm = ({ editingMealPlan }) => {
               value={mealPlanName}
               onChange={(e) => setMealPlanName(e.target.value)}
               required
+              sx={{ mb: 2 }}
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Anzahl der Personen"
               variant="outlined"
@@ -267,7 +270,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <FormControl fullWidth variant="outlined">
               <InputLabel>Anzahl der Tage</InputLabel>
               <Select
@@ -284,28 +287,36 @@ const MealPlanForm = ({ editingMealPlan }) => {
 
           {Object.keys(meals).map((dayKey, index) => (
             <Grid item xs={12} key={index}>
-              <Typography variant="h6">{`Tag ${index + 1}`}</Typography>
-
-              {['breakfast', 'lunch', 'dinner'].map((mealType) => (
-                <div key={mealType}>
-                  <Typography variant="body1">
-                    {mealType === 'breakfast' ? 'Frühstück' :
-                     mealType === 'lunch' ? 'Mittagessen' : 'Abendessen'}:
-                    {meals[dayKey][mealType] ? (
-                      ` ${getRecipeTitleById(meals[dayKey][mealType])}`
-                    ) : (
-                      ' Keine Auswahl'
-                    )}
+              <Card variant="outlined" sx={{ mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                    {`Tag ${index + 1}`}
                   </Typography>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleOpenSelector(dayKey, mealType)}
-                    style={{ marginTop: '8px', marginBottom: '8px' }}
-                  >
-                    {meals[dayKey][mealType] ? 'Rezept ändern' : 'Rezept auswählen'}
-                  </Button>
-                </div>
-              ))}
+                  <Divider sx={{ mb: 2 }} />
+                  {['breakfast', 'lunch', 'dinner'].map((mealType) => (
+                    <Box key={mealType} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <RestaurantIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="body1" sx={{ flexGrow: 1 }}>
+                        {mealType === 'breakfast' ? 'Frühstück' :
+                         mealType === 'lunch' ? 'Mittagessen' : 'Abendessen'}:
+                        {meals[dayKey][mealType] ? (
+                          <strong>{` ${getRecipeTitleById(meals[dayKey][mealType])}`}</strong>
+                        ) : (
+                          ' Keine Auswahl'
+                        )}
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                        onClick={() => handleOpenSelector(dayKey, mealType)}
+                        size="small"
+                      >
+                        {meals[dayKey][mealType] ? 'Ändern' : 'Auswählen'}
+                      </Button>
+                    </Box>
+                  ))}
+                </CardContent>
+              </Card>
             </Grid>
           ))}
 
@@ -315,7 +326,8 @@ const MealPlanForm = ({ editingMealPlan }) => {
               color="primary"
               fullWidth
               type="submit"
-              style={{ marginTop: '16px' }}
+              size="large"
+              sx={{ mt: 2, py: 1.5 }}
             >
               Speichern
             </Button>
