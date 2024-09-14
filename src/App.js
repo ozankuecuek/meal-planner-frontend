@@ -27,6 +27,8 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 // Remove this line if you're not using populateRecipes
 // import { populateRecipes } from './utils/populateRecipes';
 
+import CookieConsentBanner from './components/CookieConsent';
+
 function App() {
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [user] = useAuthState(auth);
@@ -93,6 +95,7 @@ function App() {
           </Routes>
         </Box>
         <Footer />
+        <CookieConsentBanner />
       </Box>
     </ThemeProvider>
   );
