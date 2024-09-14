@@ -13,6 +13,7 @@ import Login from './Login';
 import Register from './Register';
 import MealPlanList from './MealPlanList';
 import RecipeDetail from './components/RecipeDetail';
+import RezeptFormular from './RecipeForm';
 
 // Remove this line if you're not using populateRecipes
 // import { populateRecipes } from './utils/populateRecipes';
@@ -59,7 +60,7 @@ function App() {
           <Route path="/" element={<MealPlanForm />} />
           <Route path="/rezepte" element={<RecipeList onEdit={handleEdit} />} />
           <Route path="/rezepte/:id" element={<RecipeDetail />} />
-          <Route path="/rezepte/neu" element={<RecipeForm />} />
+          <Route path="/rezepte/neu" element={<RezeptFormular />} />
           <Route 
             path="/rezepte/bearbeiten/:id" 
             element={

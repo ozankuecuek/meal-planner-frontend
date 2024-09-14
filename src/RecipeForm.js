@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { TextField, Button, Grid, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import JsonRecipeInput from './components/Recipe/JsonRecipeInput'; // Add this line
 
 const RezeptFormular = ({ editingRecipe, onSubmit }) => {
   const [titel, setTitel] = useState('');
@@ -18,6 +19,7 @@ const RezeptFormular = ({ editingRecipe, onSubmit }) => {
   const [servings, setServings] = useState(1); // New state for servings
   const navigiere = useNavigate();
   const { id } = useParams();
+  const [jsonInputOpen, setJsonInputOpen] = useState(false);
 
   useEffect(() => {
     if (editingRecipe) {
@@ -165,11 +167,48 @@ const RezeptFormular = ({ editingRecipe, onSubmit }) => {
     }
   };
 
+  const handleJsonSubmit = async (jsonRecipe) => {
+    try {
+      if (!benutzer) {
+        alert('Sie müssen angemeldet sein, um ein Rezept zu speichern');
+        return;
+      }
+
+      const rezeptDaten = {
+        title: jsonRecipe.title,
+        ingredients: jsonRecipe.ingredients,
+        instructions: jsonRecipe.instructions,
+        imageUrl: jsonRecipe.imageUrl || '',
+        userId: benutzer.uid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        servings: jsonRecipe.servings || 1,
+        description: jsonRecipe.description || ''
+      };
+
+      await addDoc(collection(db, 'recipes'), rezeptDaten);
+      alert('Rezept erfolgreich gespeichert!');
+      setJsonInputOpen(false);
+      navigiere('/rezepte');
+    } catch (fehler) {
+      console.error('Fehler beim Speichern des Rezepts:', fehler);
+      alert(`Fehler beim Speichern des Rezepts: ${fehler.message}`);
+    }
+  };
+
   return (
     <Paper elevation={3} style={{ padding: '16px', maxWidth: '600px', margin: 'auto', marginBottom: '20px' }}>
       <Typography variant="h5" gutterBottom>
         {editingRecipe ? 'Rezept bearbeiten' : 'Neues Rezept erstellen'}
       </Typography>
+      <Button
+        variant="outlined"
+        color="primary"
+        onClick={() => setJsonInputOpen(true)}
+        style={{ marginBottom: '16px' }}
+      >
+        Als JSON bereitstellen
+      </Button>
       <form onSubmit={formularAbsenden}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -311,6 +350,11 @@ const RezeptFormular = ({ editingRecipe, onSubmit }) => {
           </Grid>
         </Grid>
       </form>
+      <JsonRecipeInput
+        open={jsonInputOpen}
+        onClose={() => setJsonInputOpen(false)}
+        onSubmit={handleJsonSubmit}
+      />
     </Paper>
   );
 };
