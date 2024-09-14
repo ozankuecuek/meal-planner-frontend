@@ -1,13 +1,8 @@
 // MealPlanSummary.js
-import React, { useEffect, useState } from 'react';
-import { db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import React from 'react';
 import { Typography, Paper } from '@mui/material';
 
 const MealPlanSummary = ({ mealPlanId, mealPlanData, shoppingList, recipes }) => {
-  // Since mealPlanData and shoppingList are already passed as props,
-  // we don't need to fetch them again.
-
   // Helper function to get recipe title by ID
   const getRecipeTitleById = (id) => {
     const recipe = recipes.find((r) => r.id === id);

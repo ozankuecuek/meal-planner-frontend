@@ -16,6 +16,8 @@ import { Link as RouterLink } from 'react-router-dom'; // Use RouterLink for rou
 import useMediaQuery from '@mui/material/useMediaQuery'; // For responsiveness
 import { useTheme } from '@mui/material/styles'; // To access the current theme
 import ListItemText from '@mui/material/ListItemText'; // For better list item text
+import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
 
 function Navbar() {
   const [user] = useAuthState(auth); // Check authentication status
@@ -30,99 +32,132 @@ function Navbar() {
 
   // Define menu items based on authentication status
   const menuItems = (
-    <List>
-      {/* Public Links */}
-      <ListItem button component={RouterLink} to="/recipes" onClick={toggleDrawer(false)}>
-        <ListItemText primary="Recipes" />
-      </ListItem>
-      <ListItem button component={RouterLink} to="/mealplans/new" onClick={toggleDrawer(false)}>
-        <ListItemText primary="Create a Meal Plan" />
-      </ListItem>
+    <Box sx={{ width: 250 }}>
+      <List>
+        <ListItem button component={RouterLink} to="/rezepte" onClick={toggleDrawer(false)}>
+          <ListItemText primary="Rezepte" />
+        </ListItem>
+        <ListItem button component={RouterLink} to="/essensplaene/neu" onClick={toggleDrawer(false)}>
+          <ListItemText primary="Versorgungsplan erstellen" />
+        </ListItem>
 
-      {/* Protected Links (only visible to authenticated users) */}
-      {user && (
-        <>
-          <ListItem button component={RouterLink} to="/recipes/new" onClick={toggleDrawer(false)}>
-            <ListItemText primary="Create a Recipe" />
-          </ListItem>
-          <ListItem button component={RouterLink} to="/mealplans" onClick={toggleDrawer(false)}>
-            <ListItemText primary="My Meal Plans" />
-          </ListItem>
-        </>
-      )}
-
-      {/* Authentication Button */}
-      <ListItem>
-        {user ? (
-          <Button color="inherit" onClick={() => auth.signOut()}>
-            Logout
-          </Button>
-        ) : (
-          <Button color="inherit" component={RouterLink} to="/login" onClick={toggleDrawer(false)}>
-            Login
-          </Button>
+        {user && (
+          <>
+            <Divider />
+            <ListItem button component={RouterLink} to="/rezepte/neu" onClick={toggleDrawer(false)}>
+              <ListItemText primary="Rezept erstellen" />
+            </ListItem>
+            <ListItem button component={RouterLink} to="/essensplaene" onClick={toggleDrawer(false)}>
+              <ListItemText primary="Meine Versorgungspläne" />
+            </ListItem>
+          </>
         )}
-      </ListItem>
-    </List>
+
+        <Divider />
+        <ListItem>
+          {user ? (
+            <Button fullWidth variant="outlined" color="inherit" onClick={() => auth.signOut()}>
+              Abmelden
+            </Button>
+          ) : (
+            <Button fullWidth variant="outlined" color="inherit" component={RouterLink} to="/anmelden" onClick={toggleDrawer(false)}>
+              Anmelden
+            </Button>
+          )}
+        </ListItem>
+      </List>
+    </Box>
+  );
+
+  const MultiLineButton = ({ to, children }) => (
+    <Button
+      color="inherit"
+      component={RouterLink}
+      to={to}
+      sx={{
+        mx: 1,
+        '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start', // Left-align the text
+        textAlign: 'left',
+        lineHeight: 1.2,
+        minWidth: 'auto',
+        padding: '6px 8px',
+      }}
+    >
+      {children.split(' ').map((word, index) => (
+        <span key={index}>{word}</span>
+      ))}
+    </Button>
   );
 
   return (
-    <>
-      {/* AppBar remains sticky */}
-      <AppBar position="sticky">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Meal Planner
+    <AppBar position="sticky">
+      <Toolbar>
+        <div style={{ display: 'flex', alignItems: 'baseline', flexGrow: 1 }}>
+          <Typography variant="h6" component="div" sx={{ mr: 1 }}>
+            Gruppenverpflegung
           </Typography>
+          <Typography variant="subtitle2" component="div" sx={{ fontSize: '0.8rem' }}>
+            einfach gemacht
+          </Typography>
+        </div>
 
-          {isMobile ? (
-            // Show burger menu on mobile
-            <>
-              <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)} aria-label="menu">
-                <MenuIcon />
-              </IconButton>
-              <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
-                {menuItems}
-              </Drawer>
-            </>
-          ) : (
-            // Show regular buttons on desktop
-            <>
-              {/* Public Links */}
-              <Button color="inherit" component={RouterLink} to="/recipes">
-                Recipes
+        {isMobile ? (
+          // Show burger menu on mobile
+          <>
+            <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)} aria-label="menu">
+              <MenuIcon />
+            </IconButton>
+            <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
+              {menuItems}
+            </Drawer>
+          </>
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexGrow: 1 }}>
+            <MultiLineButton to="/rezepte">Rezepte</MultiLineButton>
+            <MultiLineButton to="/essensplaene/neu">
+              Versorgungsplan erstellen
+            </MultiLineButton>
+
+            {user && (
+              <>
+                <MultiLineButton to="/rezepte/neu">
+                  Rezept erstellen
+                </MultiLineButton>
+                <MultiLineButton to="/essensplaene">
+                  Meine Versorgungspläne
+                </MultiLineButton>
+              </>
+            )}
+
+            <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
+
+            {user ? (
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={() => auth.signOut()}
+                sx={{ borderColor: 'white' }}
+              >
+                Abmelden
               </Button>
-              <Button color="inherit" component={RouterLink} to="/mealplans/new">
-                Create a Meal Plan
+            ) : (
+              <Button
+                variant="outlined"
+                color="inherit"
+                component={RouterLink}
+                to="/anmelden"
+                sx={{ borderColor: 'white' }}
+              >
+                Anmelden
               </Button>
-
-              {/* Protected Links */}
-              {user && (
-                <>
-                  <Button color="inherit" component={RouterLink} to="/recipes/new">
-                    Create a Recipe
-                  </Button>
-                  <Button color="inherit" component={RouterLink} to="/mealplans">
-                    My Meal Plans
-                  </Button>
-                </>
-              )}
-
-              {/* Authentication Button */}
-              {user ? (
-                <Button color="inherit" onClick={() => auth.signOut()}>
-                  Logout
-                </Button>
-              ) : (
-                <Button color="inherit" component={RouterLink} to="/login">
-                  Login
-                </Button>
-              )}
-            </>
-          )}
-        </Toolbar>
-      </AppBar>
-    </>
+            )}
+          </Box>
+        )}
+      </Toolbar>
+    </AppBar>
   );
 }
 

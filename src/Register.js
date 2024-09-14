@@ -22,7 +22,7 @@ const Register = () => {
   return (
     <Paper elevation={3} style={{ padding: '16px', maxWidth: '400px', margin: 'auto' }}>
       <Typography variant="h5" gutterBottom>
-        Register
+        Registrieren
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
       
@@ -30,7 +30,7 @@ const Register = () => {
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
-              label="Email"
+              label="E-Mail"
               variant="outlined"
               fullWidth
               value={email}
@@ -40,7 +40,7 @@ const Register = () => {
           </Grid>
           <Grid item xs={12}>
             <TextField
-              label="Password"
+              label="Passwort"
               variant="outlined"
               fullWidth
               type="password"
@@ -51,7 +51,7 @@ const Register = () => {
           </Grid>
           <Grid item xs={12}>
             <Button variant="contained" color="primary" fullWidth type="submit">
-              Register
+              Registrieren
             </Button>
           </Grid>
         </Grid>

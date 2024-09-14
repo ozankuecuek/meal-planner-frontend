@@ -17,10 +17,10 @@ const Login = () => {
   // Google sign-in provider
   const googleProvider = new GoogleAuthProvider();
 
-  // Redirect to /mealplans if user is authenticated
+  // Redirect to /essensplaene/neu if user is authenticated
   useEffect(() => {
     if (user) {
-      navigate('/mealplans'); // Redirect to "My Meal Plans" page
+      navigate('/essensplaene/neu'); // Redirect to "Create Meal Plan" page
     }
   }, [user, navigate]);
 
@@ -63,7 +63,7 @@ const Login = () => {
       <Grid item xs={11} sm={8} md={6} lg={4}>
         <Paper elevation={3} style={{ padding: '32px' }}>
           <Typography variant="h5" gutterBottom>
-            Login
+            Anmelden
           </Typography>
 
           {/* Display authentication errors */}
@@ -75,7 +75,7 @@ const Login = () => {
               {/* Email Field */}
               <Grid item xs={12}>
                 <TextField
-                  label="Email"
+                  label="E-Mail"
                   variant="outlined"
                   type="email"
                   required
@@ -88,7 +88,7 @@ const Login = () => {
               {/* Password Field */}
               <Grid item xs={12}>
                 <TextField
-                  label="Password"
+                  label="Passwort"
                   variant="outlined"
                   type="password"
                   required
@@ -106,7 +106,7 @@ const Login = () => {
                   color="primary"
                   fullWidth
                 >
-                  Login
+                  Anmelden
                 </Button>
               </Grid>
             </Grid>
@@ -114,7 +114,7 @@ const Login = () => {
 
           {/* Divider */}
           <Typography align="center" variant="body1" style={{ margin: '16px 0' }}>
-            OR
+            ODER
           </Typography>
 
           {/* Google Sign-In Button */}
@@ -125,7 +125,7 @@ const Login = () => {
             onClick={handleGoogleSignIn} 
             style={{ marginTop: '16px' }}
           >
-            Sign in with Google
+            Mit Google anmelden
           </Button>
         </Paper>
       </Grid>

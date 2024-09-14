@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { Grid, Paper, Typography, Button } from '@mui/material';
+import { Grid, Typography, Button, CardContent, CardActions, Card } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 const RecipeList = ({ onEdit }) => {
@@ -21,7 +21,7 @@ const RecipeList = ({ onEdit }) => {
         }));
         setRecipes(recipesList);
       } catch (error) {
-        console.error('Error fetching recipes:', error);
+        console.error('Fehler beim Abrufen der Rezepte:', error);
       }
     };
     fetchRecipes();
@@ -30,91 +30,67 @@ const RecipeList = ({ onEdit }) => {
   // Function to delete a recipe
   const handleDelete = async (recipeId) => {
     if (!user) {
-      alert('You must be logged in to delete recipes.');
+      alert('Sie müssen angemeldet sein, um Rezepte zu löschen.');
       return;
     }
     try {
       await deleteDoc(doc(db, 'recipes', recipeId));
       setRecipes(recipes.filter((recipe) => recipe.id !== recipeId));
-      alert('Recipe deleted successfully!');
+      alert('Rezept erfolgreich gelöscht!');
     } catch (error) {
-      console.error('Error deleting recipe:', error);
-      alert('Failed to delete recipe.');
+      console.error('Fehler beim Löschen des Rezepts:', error);
+      alert('Fehler beim Löschen des Rezepts.');
     }
   };
 
+  // Function to edit a recipe
+  const handleEdit = (event, recipe) => {
+    event.stopPropagation();
+    onEdit(recipe);
+    navigate(`/rezepte/bearbeiten/${recipe.id}`);
+  };
+
+  const handleCardClick = (recipeId) => {
+    navigate(`/rezepte/${recipeId}`);
+  };
+
   return (
-    <div>
-      <Grid container spacing={2}>
-        {recipes.map((recipe) => (
-          <Grid item xs={12} sm={6} md={4} key={recipe.id}>
-            <Paper elevation={3} style={{ padding: '16px' }}>
-              <Typography variant="h6">{recipe.title}</Typography>
-
-              {/* Render the ingredients */}
-              {Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 && (
-                <Typography variant="body2" style={{ marginTop: '8px' }}>
-                  <strong>Ingredients:</strong>
-                  <ul>
-                    {recipe.ingredients.map((ingredient, index) => (
-                      <li key={index}>
-                        {ingredient.name} - {ingredient.quantity} {ingredient.unit}
-                      </li>
-                    ))}
-                  </ul>
-                </Typography>
-              )}
-
-              {/* Render the instructions */}
-              {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 && (
-                <Typography variant="body2" style={{ marginTop: '8px' }}>
-                  <strong>Instructions:</strong>
-                  <ul>
-                    {recipe.instructions.map((step, index) => (
-                      <li key={index}>Step {index + 1}: {step}</li>
-                    ))}
-                  </ul>
-                </Typography>
-              )}
-
-              {/* Render the image if it exists */}
+    <Grid container spacing={3}>
+      {recipes.map((recipe) => (
+        <Grid item xs={12} sm={6} md={4} key={recipe.id}>
+          <Card 
+            onClick={() => handleCardClick(recipe.id)}
+            style={{ cursor: 'pointer' }}
+          >
+            <CardContent>
+              <Typography variant="h6" component="div">
+                {recipe.title}
+              </Typography>
               {recipe.imageUrl && (
-                <div style={{ marginTop: '16px' }}>
-                  <Typography variant="body2"><strong>Recipe Image:</strong></Typography>
-                  <img
-                    src={recipe.imageUrl}
-                    alt="Recipe"
-                    style={{ width: '100%', height: 'auto' }} // Adjust size to be responsive
-                  />
-                </div>
+                <img
+                  src={recipe.imageUrl}
+                  alt={recipe.title}
+                  style={{ width: '100%', height: 'auto', marginTop: '8px' }}
+                />
               )}
-
-              {/* Only show the edit and delete buttons if the user is the owner */}
-              {user && user.uid === recipe.userId && (
-                <>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => navigate(`/recipes/edit/${recipe.id}`)}
-                    style={{ marginTop: '8px', marginRight: '8px' }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    onClick={() => handleDelete(recipe.id)}
-                    style={{ marginTop: '8px' }}
-                  >
-                    Delete
-                  </Button>
-                </>
-              )}
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-    </div>
+            </CardContent>
+            {user && user.uid === recipe.userId && (
+              <CardActions>
+                <Button size="small" onClick={(e) => handleEdit(e, recipe)}>
+                  Bearbeiten
+                </Button>
+                <Button size="small" onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(recipe.id);
+                }}>
+                  Löschen
+                </Button>
+              </CardActions>
+            )}
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
   );
 };
 

@@ -1,153 +1,193 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { db, auth } from './firebase';
-import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, deleteDoc, doc, documentId } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Typography, Button, Grid, Paper } from '@mui/material';
+import EinkaufsListe from './EinkaufsListe';
 import ShoppingList from './ShoppingList';
+import { generateMealPlanPDF } from './utils/pdfGenerator';
 
-const MealPlanList = () => {
-  const [mealPlans, setMealPlans] = useState([]);
-  const [recipes, setRecipes] = useState({});
-  const [shoppingListExists, setShoppingListExists] = useState({});
+const EssensplanListe = () => {
+  const [essensPlaene, setEssensPlaene] = useState([]);
+  const [rezepte, setRezepte] = useState({});
+  const [einkaufsListeExistiert, setEinkaufsListeExistiert] = useState({});
   const [user] = useAuthState(auth);
+  const [openShoppingList, setOpenShoppingList] = useState({});
 
-  const fetchMealPlans = useCallback(async () => {
+  const essensplaeneAbrufen = useCallback(async () => {
     if (!user) return;
     try {
       const q = query(collection(db, 'mealplans'), where('userId', '==', user.uid));
-      const mealPlanSnapshot = await getDocs(q);
-      const fetchedMealPlans = mealPlanSnapshot.docs.map((doc) => ({
+      const essensplanSnapshot = await getDocs(q);
+      const abgerufeneEssensplaene = essensplanSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      console.log('Fetched meal plans:', fetchedMealPlans);
-      setMealPlans(fetchedMealPlans);
+      console.log('Abgerufene Essenspläne:', abgerufeneEssensplaene);
+      setEssensPlaene(abgerufeneEssensplaene);
     } catch (error) {
-      console.error('Error fetching meal plans: ', error);
+      console.error('Fehler beim Abrufen der Essenspläne: ', error);
     }
   }, [user]);
 
-  const fetchRecipes = useCallback(async () => {
+  const rezepteAbrufen = useCallback(async () => {
     try {
-      const recipeSnapshot = await getDocs(collection(db, 'recipes'));
-      const recipeMap = {};
-      recipeSnapshot.forEach((doc) => {
-        const recipe = doc.data();
-        recipeMap[doc.id] = recipe.title;
+      const rezeptSnapshot = await getDocs(collection(db, 'recipes'));
+      const rezeptMap = {};
+      rezeptSnapshot.forEach((doc) => {
+        const rezept = doc.data();
+        rezeptMap[doc.id] = rezept.title;
       });
-      setRecipes(recipeMap);
+      setRezepte(rezeptMap);
     } catch (error) {
-      console.error('Error fetching recipes: ', error);
+      console.error('Fehler beim Abrufen der Rezepte: ', error);
     }
   }, []);
 
-  const checkShoppingLists = useCallback(async () => {
+  const einkaufslistenPruefen = useCallback(async () => {
     try {
-      const shoppingListMap = {};
-      for (let mealPlan of mealPlans) {
-        const q = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', mealPlan.id));
+      const einkaufslistenMap = {};
+      for (let essensplan of essensPlaene) {
+        const q = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', essensplan.id));
         const querySnapshot = await getDocs(q);
-        shoppingListMap[mealPlan.id] = !querySnapshot.empty;
+        einkaufslistenMap[essensplan.id] = !querySnapshot.empty;
       }
-      setShoppingListExists(shoppingListMap);
+      setEinkaufsListeExistiert(einkaufslistenMap);
     } catch (error) {
-      console.error('Error checking shopping lists:', error);
+      console.error('Fehler beim Prüfen der Einkaufslisten:', error);
     }
-  }, [mealPlans]);
+  }, [essensPlaene]);
 
-  const handleDeleteMealPlan = useCallback(async (mealPlanId) => {
+  const essensplanLoeschen = useCallback(async (essensplanId) => {
     if (!user) {
-      alert('You must be logged in to delete meal plans.');
+      alert('Sie müssen angemeldet sein, um Essenspläne zu löschen.');
       return;
     }
     try {
-      console.log('Attempting to delete meal plan:', mealPlanId);
+      console.log('Versuch, Essensplan zu löschen:', essensplanId);
       
-      await deleteDoc(doc(db, 'mealplans', mealPlanId));
-      console.log('Meal plan deleted successfully');
+      await deleteDoc(doc(db, 'mealplans', essensplanId));
+      console.log('Essensplan erfolgreich gelöscht');
 
-      const shoppingListQuery = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', mealPlanId));
-      const shoppingListSnapshot = await getDocs(shoppingListQuery);
-      const deletePromises = shoppingListSnapshot.docs.map(doc => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-      console.log('Associated shopping lists deleted');
+      const einkaufslistenQuery = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', essensplanId));
+      const einkaufslistenSnapshot = await getDocs(einkaufslistenQuery);
+      const loeschVersprechen = einkaufslistenSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(loeschVersprechen);
+      console.log('Zugehörige Einkaufslisten gelöscht');
 
-      setMealPlans(prevMealPlans => prevMealPlans.filter(plan => plan.id !== mealPlanId));
-      console.log('State updated');
+      setEssensPlaene(vorherigePlaene => vorherigePlaene.filter(plan => plan.id !== essensplanId));
+      console.log('Status aktualisiert');
 
-      alert('Meal plan and its shopping list have been deleted.');
+      alert('Essensplan und zugehörige Einkaufsliste wurden gelöscht.');
     } catch (error) {
-      console.error('Error deleting meal plan: ', error);
-      alert(`Failed to delete meal plan. Error: ${error.message}`);
+      console.error('Fehler beim Löschen des Essensplans: ', error);
+      alert(`Fehler beim Löschen des Essensplans. Fehler: ${error.message}`);
     }
-  }, [user, setMealPlans]);
+  }, [user, setEssensPlaene]);
+
+  const toggleShoppingList = (essensplanId) => {
+    setOpenShoppingList(prev => ({
+      ...prev,
+      [essensplanId]: !prev[essensplanId]
+    }));
+  };
+
+  const handleDownload = async (essensplan) => {
+    try {
+      // Fetch shopping list
+      const shoppingListQuery = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', essensplan.id));
+      const shoppingListSnapshot = await getDocs(shoppingListQuery);
+      const shoppingList = shoppingListSnapshot.docs[0]?.data()?.shoppingList || {};
+
+      // Fetch full recipe details
+      const recipeIds = [...new Set(Object.values(essensplan.meals).flatMap(day => Object.values(day)))];
+      const recipesQuery = query(collection(db, 'recipes'), where(documentId(), 'in', recipeIds));
+      const recipesSnapshot = await getDocs(recipesQuery);
+      const fullRecipes = recipesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Generate and download PDF
+      const doc = generateMealPlanPDF(essensplan, shoppingList, fullRecipes);
+      doc.save(`${essensplan.name || `Essensplan ${essensplan.id}`}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
+  };
 
   useEffect(() => {
-    console.log('User state changed:', user);
+    console.log('Benutzerstatus geändert:', user);
     if (user) {
-      fetchMealPlans();
-      fetchRecipes();
+      essensplaeneAbrufen();
+      rezepteAbrufen();
     }
-  }, [user, fetchMealPlans, fetchRecipes]);
+  }, [user, essensplaeneAbrufen, rezepteAbrufen]);
 
   useEffect(() => {
-    if (mealPlans.length > 0) {
-      checkShoppingLists();
+    if (essensPlaene.length > 0) {
+      einkaufslistenPruefen();
     }
-  }, [mealPlans, checkShoppingLists]);
+  }, [essensPlaene, einkaufslistenPruefen]);
 
-  console.log('Rendering MealPlanList, mealPlans:', mealPlans);
+  console.log('Rendering EssensplanListe, essensPlaene:', essensPlaene);
 
   if (!user) {
-    return <Typography>Please log in to view your meal plans.</Typography>;
+    return <Typography>Bitte melden Sie sich an, um Ihre Essenspläne zu sehen.</Typography>;
   }
 
-  if (mealPlans.length === 0) {
-    return <Typography>You haven't created any meal plans yet.</Typography>;
+  if (essensPlaene.length === 0) {
+    return <Typography>Sie haben noch keine Essenspläne erstellt.</Typography>;
   }
 
   return (
     <Grid container spacing={2} style={{ marginTop: '16px' }}>
-      {mealPlans.map((mealPlan) => (
-        <Grid item xs={12} sm={6} md={4} key={mealPlan.id}>
+      {essensPlaene.map((essensplan) => (
+        <Grid item xs={12} sm={6} md={4} key={essensplan.id}>
           <Paper elevation={3} style={{ padding: '16px' }}>
-            <Typography variant="h6">{mealPlan.name || `Meal Plan ${mealPlan.id}`}</Typography>
-            {mealPlan.meals ? (
-              Object.keys(mealPlan.meals).map((dayKey, index) => (
+            <Typography variant="h6">{essensplan.name || `Essensplan ${essensplan.id}`}</Typography>
+            {essensplan.meals ? (
+              Object.keys(essensplan.meals).map((tagKey, index) => (
                 <div key={index}>
-                  <Typography variant="subtitle1">{`Day ${index + 1}`}</Typography>
+                  <Typography variant="subtitle1">{`Tag ${index + 1}`}</Typography>
                   <Typography variant="body2">
-                    <strong>Breakfast:</strong> {recipes[mealPlan.meals[dayKey].breakfast] || 'Not selected'}
+                    <strong>Frühstück:</strong> {rezepte[essensplan.meals[tagKey].breakfast] || 'Nicht ausgewählt'}
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Lunch:</strong> {recipes[mealPlan.meals[dayKey].lunch] || 'Not selected'}
+                    <strong>Mittagessen:</strong> {rezepte[essensplan.meals[tagKey].lunch] || 'Nicht ausgewählt'}
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Dinner:</strong> {recipes[mealPlan.meals[dayKey].dinner] || 'Not selected'}
+                    <strong>Abendessen:</strong> {rezepte[essensplan.meals[tagKey].dinner] || 'Nicht ausgewählt'}
                   </Typography>
                 </div>
               ))
             ) : (
-              <Typography variant="body2">No meals available for this plan</Typography>
+              <Typography variant="body2">Keine Mahlzeiten für diesen Plan verfügbar</Typography>
             )}
-            {shoppingListExists[mealPlan.id] && (
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => setShoppingListExists({ ...shoppingListExists, [mealPlan.id]: !shoppingListExists[mealPlan.id] })}
-                style={{ marginTop: '16px' }}
-              >
-                {shoppingListExists[mealPlan.id] ? 'Hide Shopping List' : 'View Shopping List'}
-              </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => toggleShoppingList(essensplan.id)}
+              style={{ marginTop: '16px' }}
+            >
+              {openShoppingList[essensplan.id] ? 'Einkaufsliste ausblenden' : 'Einkaufsliste anzeigen'}
+            </Button>
+            {openShoppingList[essensplan.id] && (
+              <ShoppingList mealPlanId={essensplan.id} />
             )}
-            {shoppingListExists[mealPlan.id] && <ShoppingList mealPlanId={mealPlan.id} />}
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => handleDownload(essensplan)}
+              style={{ marginTop: '16px' }}
+            >
+              PDF herunterladen
+            </Button>
             <Button
               variant="outlined"
               color="secondary"
-              onClick={() => handleDeleteMealPlan(mealPlan.id)}
+              onClick={() => essensplanLoeschen(essensplan.id)}
               style={{ marginTop: '16px' }}
             >
-              Delete Meal Plan
+              Versorgungsplan löschen
             </Button>
           </Paper>
         </Grid>
@@ -156,4 +196,4 @@ const MealPlanList = () => {
   );
 };
 
-export default MealPlanList;
+export default EssensplanListe;

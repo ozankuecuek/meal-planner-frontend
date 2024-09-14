@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, TextField, Button } from '@mui/material';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const IngredientCatalog = ({ open, onClose, onSelect }) => {
@@ -10,16 +10,14 @@ const IngredientCatalog = ({ open, onClose, onSelect }) => {
 
   useEffect(() => {
     const fetchIngredients = async () => {
-      const recipesSnapshot = await getDocs(collection(db, 'recipes'));
-      const allIngredients = new Set();
-      recipesSnapshot.forEach(doc => {
-        const recipeData = doc.data();
-        recipeData.ingredients.forEach(ingredient => {
-          allIngredients.add(ingredient.name);
-        });
-      });
-      setIngredients(Array.from(allIngredients).sort());
-      setFilteredIngredients(Array.from(allIngredients).sort());
+      try {
+        const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'));
+        const allIngredients = ingredientsSnapshot.docs.map(doc => doc.data().name);
+        setIngredients(allIngredients.sort());
+      } catch (error) {
+        console.error('Error fetching ingredients:', error);
+        // Handle the error appropriately (e.g., show an error message to the user)
+      }
     };
     fetchIngredients();
   }, []);
@@ -27,32 +25,51 @@ const IngredientCatalog = ({ open, onClose, onSelect }) => {
   const handleSearch = (event) => {
     const searchTerm = event.target.value.toLowerCase();
     setSearchTerm(searchTerm);
-    setFilteredIngredients(
-      ingredients.filter(ingredient => ingredient.toLowerCase().includes(searchTerm))
-    );
+    if (searchTerm.length >= 3) {
+      setFilteredIngredients(
+        ingredients.filter(ingredient => ingredient.toLowerCase().includes(searchTerm))
+      );
+    } else {
+      setFilteredIngredients([]);
+    }
+  };
+
+  const handleAddNewIngredient = async () => {
+    if (searchTerm.trim() !== '') {
+      try {
+        await addDoc(collection(db, 'ingredients'), { name: searchTerm.trim() });
+        onSelect(searchTerm.trim());
+      } catch (error) {
+        console.error('Error adding new ingredient:', error);
+      }
+    }
   };
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Select an Ingredient</DialogTitle>
+      <DialogTitle>Zutat auswählen</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
-          label="Search ingredients"
+          label="Zutat suchen"
           type="text"
           fullWidth
           value={searchTerm}
           onChange={handleSearch}
         />
-        <List>
-          {filteredIngredients.map((ingredient, index) => (
-            <ListItem button key={index} onClick={() => onSelect(ingredient)}>
-              <ListItemText primary={ingredient} />
-            </ListItem>
-          ))}
-        </List>
-        <Button onClick={() => onSelect(searchTerm)}>Add New Ingredient</Button>
+        {searchTerm.length >= 3 && (
+          <List>
+            {filteredIngredients.map((ingredient, index) => (
+              <ListItem button key={index} onClick={() => onSelect(ingredient)}>
+                <ListItemText primary={ingredient} />
+              </ListItem>
+            ))}
+          </List>
+        )}
+        {searchTerm.length >= 3 && filteredIngredients.length === 0 && (
+          <Button onClick={handleAddNewIngredient}>Neue Zutat hinzufügen: {searchTerm}</Button>
+        )}
       </DialogContent>
     </Dialog>
   );

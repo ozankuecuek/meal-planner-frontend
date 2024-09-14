@@ -73,11 +73,12 @@ const MealPlanForm = ({ editingMealPlan }) => {
             const recipeDoc = await getDoc(doc(db, 'recipes', recipeId));
             if (recipeDoc.exists()) {
               const recipe = recipeDoc.data();
-              const recipeServings = recipe.servings || 1; // Default to 1 if not specified
+              const recipeServings = recipe.servings || recipe.portions || 1; // Handle both old and new key names
 
               recipe.ingredients.forEach((ingredient) => {
-                const key = `${ingredient.name}-${ingredient.unit}`;
-                const unitQuantity = parseFloat(ingredient.quantity) / recipeServings;
+                const key = `${ingredient.name}-${ingredient.unit || ingredient.einheit || ''}`; // Handle both old and new key names
+                const quantity = parseFloat(ingredient.quantity || ingredient.menge || 0); // Handle both old and new key names
+                const unitQuantity = quantity / recipeServings;
                 const adjustedQuantity = unitQuantity * numPeople;
 
                 if (shoppingList[key]) {
@@ -86,7 +87,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
                   shoppingList[key] = {
                     name: ingredient.name,
                     quantity: adjustedQuantity,
-                    unit: ingredient.unit
+                    unit: ingredient.unit || ingredient.einheit || ''
                   };
                 }
               });
@@ -231,14 +232,14 @@ const MealPlanForm = ({ editingMealPlan }) => {
   return (
     <Paper elevation={3} style={{ padding: '16px', maxWidth: '600px', margin: 'auto' }}>
       <Typography variant="h5" gutterBottom>
-        {editingMealPlan ? 'Edit Meal Plan' : 'Create a Meal Plan'}
+        {editingMealPlan ? 'Versorgungsplan bearbeiten' : 'Versorgungsplan erstellen'}
       </Typography>
 
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
-              label="Meal Plan Name"
+              label="Name des Versorgungsplans"
               variant="outlined"
               fullWidth
               value={mealPlanName}
@@ -249,7 +250,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
 
           <Grid item xs={12}>
             <TextField
-              label="Number of People"
+              label="Anzahl der Personen"
               variant="outlined"
               fullWidth
               value={numPeople}
@@ -268,11 +269,11 @@ const MealPlanForm = ({ editingMealPlan }) => {
 
           <Grid item xs={12}>
             <FormControl fullWidth variant="outlined">
-              <InputLabel>Number of Days</InputLabel>
+              <InputLabel>Anzahl der Tage</InputLabel>
               <Select
                 value={numDays}
                 onChange={handleNumDaysChange}
-                label="Number of Days"
+                label="Anzahl der Tage"
               >
                 {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                   <MenuItem key={day} value={day}>{day}</MenuItem>
@@ -281,19 +282,19 @@ const MealPlanForm = ({ editingMealPlan }) => {
             </FormControl>
           </Grid>
 
-          {/* Dynamically generate meal inputs for each day */}
           {Object.keys(meals).map((dayKey, index) => (
             <Grid item xs={12} key={index}>
-              <Typography variant="h6">{`Day ${index + 1}`}</Typography>
+              <Typography variant="h6">{`Tag ${index + 1}`}</Typography>
 
               {['breakfast', 'lunch', 'dinner'].map((mealType) => (
                 <div key={mealType}>
                   <Typography variant="body1">
-                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)}:
+                    {mealType === 'breakfast' ? 'Frühstück' :
+                     mealType === 'lunch' ? 'Mittagessen' : 'Abendessen'}:
                     {meals[dayKey][mealType] ? (
                       ` ${getRecipeTitleById(meals[dayKey][mealType])}`
                     ) : (
-                      ' No selection'
+                      ' Keine Auswahl'
                     )}
                   </Typography>
                   <Button
@@ -301,7 +302,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
                     onClick={() => handleOpenSelector(dayKey, mealType)}
                     style={{ marginTop: '8px', marginBottom: '8px' }}
                   >
-                    {meals[dayKey][mealType] ? 'Change Recipe' : 'Select Recipe'}
+                    {meals[dayKey][mealType] ? 'Rezept ändern' : 'Rezept auswählen'}
                   </Button>
                 </div>
               ))}
@@ -316,7 +317,7 @@ const MealPlanForm = ({ editingMealPlan }) => {
               type="submit"
               style={{ marginTop: '16px' }}
             >
-              Save Meal Plan
+              Speichern
             </Button>
           </Grid>
         </Grid>

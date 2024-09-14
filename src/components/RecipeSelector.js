@@ -1,31 +1,31 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, Grid, Card, CardContent, CardMedia, Typography } from '@mui/material';
 
-const RecipeSelector = ({ open, onClose, recipes, onSelect }) => {
+const RezeptAuswahl = ({ open, onClose, recipes, onSelect }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Select a Recipe</DialogTitle>
+      <DialogTitle>Wählen Sie ein Rezept</DialogTitle>
       <DialogContent>
         <Grid container spacing={2}>
-          {recipes.map((recipe) => (
-            <Grid item xs={12} sm={6} md={4} key={recipe.id}>
+          {recipes.map((rezept) => (
+            <Grid item xs={12} sm={6} md={4} key={rezept.id}>
               <Card 
                 onClick={() => {
-                  console.log('Selected recipe:', recipe.id);
-                  onSelect(recipe.id);
+                  console.log('Ausgewähltes Rezept:', rezept.id);
+                  onSelect(rezept.id);
                 }} 
                 style={{ cursor: 'pointer' }}
               >
-                {recipe.imageUrl && (
+                {rezept.imageUrl && (
                   <CardMedia
                     component="img"
                     height="140"
-                    image={recipe.imageUrl}
-                    alt={recipe.title}
+                    image={rezept.imageUrl}
+                    alt={rezept.title}
                   />
                 )}
                 <CardContent>
-                  <Typography variant="h6">{recipe.title}</Typography>
+                  <Typography variant="h6">{rezept.title}</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -36,4 +36,4 @@ const RecipeSelector = ({ open, onClose, recipes, onSelect }) => {
   );
 };
 
-export default RecipeSelector;
+export default RezeptAuswahl;
