@@ -37,7 +37,7 @@ export const generateMealPlanPDF = (mealPlanData, shoppingList, recipes) => {
   });
 
   // Add recipes (only unique recipes)
-  const uniqueRecipes = [...new Set(recipes)];
+  const uniqueRecipes = [...new Set(recipes.filter(r => r !== undefined))];
   uniqueRecipes.forEach((recipe, index) => {
     doc.addPage();
     doc.setFontSize(18);

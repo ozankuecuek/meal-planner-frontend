@@ -15,8 +15,18 @@ const MealPlanForm = ({ editingMealPlan }) => {
   // ... (keep all the existing state and functions)
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: '800px', margin: 'auto', borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
+    <Paper elevation={3} sx={{ padding: '24px', backgroundColor: '#f5f5f5', borderRadius: '16px', maxWidth: '800px', margin: 'auto' }}>
+      <Typography 
+        variant="h4" 
+        gutterBottom 
+        sx={{ 
+          mb: 4, 
+          fontWeight: 700, 
+          color: 'primary.main',
+          textAlign: 'center',
+          fontFamily: '"Playfair Display", serif',
+        }}
+      >
         {editingMealPlan ? 'Versorgungsplan bearbeiten' : 'Versorgungsplan erstellen'}
       </Typography>
 

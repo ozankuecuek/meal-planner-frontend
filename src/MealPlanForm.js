@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { TextField, Button, Grid, Typography, Paper, MenuItem, Select, FormControl, InputLabel, Card, CardContent, Divider, Box } from '@mui/material';
+import { TextField, Button, Grid, Typography, Paper, MenuItem, Select, FormControl, InputLabel, Card, CardContent, Divider, Box, useTheme, useMediaQuery } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
 import MealPlanSummary from './MealPlanSummary';
 import { analytics } from './firebase';
@@ -32,6 +32,9 @@ const MealPlanForm = ({ editingMealPlan }) => {
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [currentMealType, setCurrentMealType] = useState('');
   const [currentDay, setCurrentDay] = useState('');
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Initialize meal plan structure dynamically based on the number of days
   const initializeMeals = (days) => {
@@ -232,11 +235,10 @@ const MealPlanForm = ({ editingMealPlan }) => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: '800px', margin: 'auto', borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
-        {editingMealPlan ? 'Versorgungsplan bearbeiten' : 'Versorgungsplan erstellen'}
+    <Paper elevation={3} style={{ padding: '24px', maxWidth: '800px', margin: 'auto', marginBottom: '20px' }}>
+      <Typography variant="h4" gutterBottom color="primary">
+        {editingMealPlan ? 'Versorgungsplan bearbeiten' : 'Neuen Versorgungsplan erstellen'}
       </Typography>
-
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
@@ -247,7 +249,6 @@ const MealPlanForm = ({ editingMealPlan }) => {
               value={mealPlanName}
               onChange={(e) => setMealPlanName(e.target.value)}
               required
-              sx={{ mb: 2 }}
             />
           </Grid>
 
@@ -285,18 +286,24 @@ const MealPlanForm = ({ editingMealPlan }) => {
             </FormControl>
           </Grid>
 
+          <Grid item xs={12}>
+            <Divider style={{ margin: '16px 0' }} />
+            <Typography variant="h6" gutterBottom color="primary">
+              Mahlzeiten
+            </Typography>
+          </Grid>
+
           {Object.keys(meals).map((dayKey, index) => (
             <Grid item xs={12} key={index}>
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                  <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'primary.main' }}>
                     {`Tag ${index + 1}`}
                   </Typography>
-                  <Divider sx={{ mb: 2 }} />
+                  <Divider sx={{ mb: 1 }} />
                   {['breakfast', 'lunch', 'dinner'].map((mealType) => (
-                    <Box key={mealType} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <RestaurantIcon sx={{ mr: 1, color: 'primary.main' }} />
-                      <Typography variant="body1" sx={{ flexGrow: 1 }}>
+                    <Box key={mealType} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="body2" sx={{ flexGrow: 1 }}>
                         {mealType === 'breakfast' ? 'Frühstück' :
                          mealType === 'lunch' ? 'Mittagessen' : 'Abendessen'}:
                         {meals[dayKey][mealType] ? (
@@ -322,14 +329,13 @@ const MealPlanForm = ({ editingMealPlan }) => {
 
           <Grid item xs={12}>
             <Button
+              type="submit"
               variant="contained"
               color="primary"
-              fullWidth
-              type="submit"
               size="large"
-              sx={{ mt: 2, py: 1.5 }}
+              style={{ marginTop: '24px' }}
             >
-              Speichern
+              Versorgungsplan speichern
             </Button>
           </Grid>
         </Grid>

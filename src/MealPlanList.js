@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, auth } from './firebase';
 import { collection, getDocs, query, where, deleteDoc, doc, documentId } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { Typography, Button, Grid, Paper, Box, Divider, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Typography, Button, Grid, Paper, Box, Divider, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails, useMediaQuery, useTheme } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -16,6 +16,9 @@ const EssensplanListe = () => {
   const [einkaufsListeExistiert, setEinkaufsListeExistiert] = useState({});
   const [user] = useAuthState(auth);
   const [openShoppingList, setOpenShoppingList] = useState({});
+  const [expandedDays, setExpandedDays] = useState({});
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const essensplaeneAbrufen = useCallback(async () => {
     if (!user) return;
@@ -103,7 +106,7 @@ const EssensplanListe = () => {
       const shoppingList = shoppingListSnapshot.docs[0]?.data()?.shoppingList || {};
 
       // Fetch full recipe details
-      const recipeIds = [...new Set(Object.values(essensplan.meals).flatMap(day => Object.values(day)))];
+      const recipeIds = [...new Set(Object.values(essensplan.meals).flatMap(day => Object.values(day)))].filter(id => id !== null && id !== undefined);
       const recipesQuery = query(collection(db, 'recipes'), where(documentId(), 'in', recipeIds));
       const recipesSnapshot = await getDocs(recipesQuery);
       const fullRecipes = recipesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -115,6 +118,16 @@ const EssensplanListe = () => {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
     }
+  };
+
+  const handleAccordionChange = (essensplanId, dayIndex) => (event, isExpanded) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [essensplanId]: {
+        ...prev[essensplanId],
+        [dayIndex]: isExpanded
+      }
+    }));
   };
 
   useEffect(() => {
@@ -134,71 +147,117 @@ const EssensplanListe = () => {
   console.log('Rendering EssensplanListe, essensPlaene:', essensPlaene);
 
   return (
-    <Box sx={{ padding: 4 }}>
-      <Typography variant="h4" gutterBottom>Ihre Versorgungspläne</Typography>
-      {!user && (
-        <Typography>Bitte melden Sie sich an, um Ihre Essenspläne zu sehen.</Typography>
-      )}
-      {user && essensPlaene.length === 0 && (
-        <Typography>Sie haben noch keine Essenspläne erstellt.</Typography>
-      )}
-      <Grid container spacing={4}>
-        {essensPlaene.map((essensplan) => (
-          <Grid item xs={12} key={essensplan.id}>
-            <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-              <Box sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6">{essensplan.name || `Essensplan ${essensplan.id}`}</Typography>
-                <Box>
-                  <Tooltip title="Einkaufsliste">
-                    <IconButton color="inherit" onClick={() => toggleShoppingList(essensplan.id)}>
-                      <ShoppingCartIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="PDF herunterladen">
-                    <IconButton color="inherit" onClick={() => handleDownload(essensplan)}>
-                      <PictureAsPdfIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Löschen">
-                    <IconButton color="inherit" onClick={() => essensplanLoeschen(essensplan.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
+    <Box sx={{ maxWidth: '1200px', margin: 'auto', padding: '24px' }}>
+      {essensPlaene.length === 0 ? (
+        <Typography>Sie haben noch keine Versorgungspläne erstellt.</Typography>
+      ) : (
+        <Grid container spacing={3} alignItems="flex-start">
+          {essensPlaene.map((essensplan) => (
+            <Grid item xs={12} sm={6} md={4} key={essensplan.id} sx={{ display: 'flex' }}>
+              <Paper 
+                elevation={3} 
+                sx={{ 
+                  borderRadius: 2, 
+                  overflow: 'hidden', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  width: '100%',
+                  height: 'auto',
+                  minHeight: '100%'
+                }}
+              >
+                <Box sx={{ 
+                  bgcolor: 'primary.main', 
+                  color: 'primary.contrastText', 
+                  p: 2,
+                  display: 'flex', 
+                  flexDirection: 'column',
+                }}>
+                  <Typography 
+                    variant="h6" 
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      lineHeight: 1.2,
+                      marginBottom: 1
+                    }}
+                  >
+                    {essensplan.name || `Versorgungsplan ${essensplan.id}`}
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Tooltip title="Einkaufsliste">
+                      <IconButton size="small" color="inherit" onClick={() => toggleShoppingList(essensplan.id)}>
+                        <ShoppingCartIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="PDF herunterladen">
+                      <IconButton size="small" color="inherit" onClick={() => handleDownload(essensplan)}>
+                        <PictureAsPdfIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Löschen">
+                      <IconButton size="small" color="inherit" onClick={() => essensplanLoeschen(essensplan.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Box>
-              </Box>
-              <Box sx={{ p: 3 }}>
-                {essensplan.meals ? (
-                  Object.keys(essensplan.meals).map((tagKey, index) => (
-                    <Accordion key={index} sx={{ mb: 2 }}>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="subtitle1">{`Tag ${index + 1}`}</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Typography variant="body1" paragraph>
-                          <strong>Frühstück:</strong> {rezepte[essensplan.meals[tagKey].breakfast] || 'Nicht ausgewählt'}
-                        </Typography>
-                        <Typography variant="body1" paragraph>
-                          <strong>Mittagessen:</strong> {rezepte[essensplan.meals[tagKey].lunch] || 'Nicht ausgewählt'}
-                        </Typography>
-                        <Typography variant="body1">
-                          <strong>Abendessen:</strong> {rezepte[essensplan.meals[tagKey].dinner] || 'Nicht ausgewählt'}
-                        </Typography>
-                      </AccordionDetails>
-                    </Accordion>
-                  ))
-                ) : (
-                  <Typography variant="body1">Keine Mahlzeiten für diesen Plan verfügbar</Typography>
+                <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+                  {essensplan.meals ? (
+                    Object.keys(essensplan.meals).map((tagKey, index) => (
+                      <Accordion 
+                        key={`${essensplan.id}-${index}`}
+                        expanded={expandedDays[essensplan.id]?.[index] || false}
+                        onChange={handleAccordionChange(essensplan.id, index)}
+                        sx={{
+                          '&.Mui-expanded': {
+                            margin: 0,
+                          },
+                          '&:before': {
+                            display: 'none',
+                          },
+                        }}
+                      >
+                        <AccordionSummary 
+                          expandIcon={<ExpandMoreIcon />}
+                          sx={{
+                            '&.Mui-expanded': {
+                              minHeight: 48,
+                            },
+                          }}
+                        >
+                          <Typography>{`Tag ${index + 1}`}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Typography paragraph>
+                            <strong>Frühstück:</strong> {rezepte[essensplan.meals[tagKey].breakfast] || 'Nicht ausgewählt'}
+                          </Typography>
+                          <Typography paragraph>
+                            <strong>Mittagessen:</strong> {rezepte[essensplan.meals[tagKey].lunch] || 'Nicht ausgewählt'}
+                          </Typography>
+                          <Typography>
+                            <strong>Abendessen:</strong> {rezepte[essensplan.meals[tagKey].dinner] || 'Nicht ausgewählt'}
+                          </Typography>
+                        </AccordionDetails>
+                      </Accordion>
+                    ))
+                  ) : (
+                    <Typography>Keine Mahlzeiten für diesen Plan verfügbar</Typography>
+                  )}
+                </Box>
+                {openShoppingList[essensplan.id] && (
+                  <Box sx={{ p: 2, bgcolor: 'grey.100' }}>
+                    <ShoppingList mealPlanId={essensplan.id} />
+                  </Box>
                 )}
-              </Box>
-              {openShoppingList[essensplan.id] && (
-                <Box sx={{ p: 3, bgcolor: 'grey.100' }}>
-                  <ShoppingList mealPlanId={essensplan.id} />
-                </Box>
-              )}
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      )}
     </Box>
   );
 };

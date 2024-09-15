@@ -66,7 +66,7 @@ const Login = () => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#f0f0f0', // Light grey background
       }}
     >
       <Grid item xs={11} sm={8} md={6} lg={4}>

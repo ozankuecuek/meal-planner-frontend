@@ -28,6 +28,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 // import { populateRecipes } from './utils/populateRecipes';
 
 import CookieConsentBanner from './components/CookieConsent';
+import LandingPage from './components/LandingPage';
 
 function App() {
   const [editingRecipe, setEditingRecipe] = useState(null);
@@ -69,7 +70,8 @@ function App() {
         <Navbar user={user} />
         <Box flexGrow={1} style={{ padding: '16px', maxWidth: '1200px', margin: 'auto' }}>
           <Routes>
-            <Route path="/" element={<MealPlanForm />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/essensplaene/neu" element={<MealPlanForm />} />
             <Route path="/rezepte" element={<RecipeList onEdit={handleEdit} />} />
             <Route path="/rezepte/:id" element={<RecipeDetail />} />
             <Route path="/rezepte/neu" element={<RezeptFormular />} />
@@ -82,7 +84,6 @@ function App() {
                 />
               } 
             />
-            <Route path="/essensplaene/neu" element={<MealPlanForm />} />
             <Route path="/anmelden" element={<Login />} />
             <Route path="/registrieren" element={<Register />} />
             <Route path="/essensplaene" element={<MealPlanList />} />
