@@ -13,6 +13,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const RezeptFormular = ({ editingRecipe, onSubmit }) => {
   const [titel, setTitel] = useState('');
+  const [description, setDescription] = useState('');
   const [zutaten, setZutaten] = useState([{ name: '', menge: '', einheit: '' }]);
   const [anweisungen, setAnweisungen] = useState(['']);
   const [bild, setBild] = useState(null);
@@ -28,6 +29,7 @@ const RezeptFormular = ({ editingRecipe, onSubmit }) => {
   useEffect(() => {
     if (editingRecipe) {
       setTitel(editingRecipe.title);
+      setDescription(editingRecipe.description || '');
       setZutaten(editingRecipe.ingredients.map(ingredient => ({
         name: ingredient.name || '',
         menge: ingredient.menge || '',
@@ -94,6 +96,7 @@ const RezeptFormular = ({ editingRecipe, onSubmit }) => {
 
       const rezeptDaten = {
         title: titel,
+        description: description,
         ingredients: zutaten,
         instructions: anweisungen,
         imageUrl: bildUrl,
@@ -238,6 +241,18 @@ const RezeptFormular = ({ editingRecipe, onSubmit }) => {
               onChange={(e) => setServings(e.target.value)}
               required
               inputProps={{ min: "1" }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              label="Beschreibung"
+              variant="outlined"
+              fullWidth
+              multiline
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </Grid>
 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db, auth } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, getDoc, query, where, documentId } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { TextField, Button, Grid, Typography, Paper, MenuItem, Select, FormControl, InputLabel, Card, CardContent, Divider, Box, useTheme, useMediaQuery } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,6 +10,8 @@ import { logEvent } from "firebase/analytics";
 import RecipeSelector from './components/RecipeSelector';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { generateMealPlanPDF } from './utils/pdfGenerator';
 
 const MealPlanForm = ({ editingMealPlan }) => {
   const [mealPlanName, setMealPlanName] = useState('');
@@ -32,6 +34,8 @@ const MealPlanForm = ({ editingMealPlan }) => {
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [currentMealType, setCurrentMealType] = useState('');
   const [currentDay, setCurrentDay] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -114,6 +118,8 @@ const MealPlanForm = ({ editingMealPlan }) => {
   // Handle form submission (create or update a meal plan and shopping list)
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
+    setIsSubmitted(false);
 
     if (!validateNumPeople(numPeople)) {
       return;
@@ -157,10 +163,11 @@ const MealPlanForm = ({ editingMealPlan }) => {
 
       logEvent(analytics, 'meal_plan_created', { plan_name: mealPlanName });
 
-      alert('Meal plan and shopping list saved successfully!');
+      setIsSubmitted(true);
+
     } catch (error) {
       console.error('Error saving meal plan and shopping list: ', error);
-      alert('Failed to save meal plan');
+      setSubmitError('Failed to save meal plan. Please try again.');
     }
   };
 
@@ -183,13 +190,54 @@ const MealPlanForm = ({ editingMealPlan }) => {
     }
   }, [editingMealPlan]);
 
-  if (mealPlanId && mealPlanData && shoppingList) {
+  const handleDownload = useCallback(async (mealPlanData) => {
+    try {
+      console.log("Downloading meal plan:", mealPlanData);
+
+      let shoppingListData = shoppingList;
+      let fullRecipes = [];
+
+      // If the meal plan has an ID (saved to database), fetch the data
+      if (mealPlanData.id) {
+        // Fetch shopping list
+        const shoppingListQuery = query(collection(db, 'shoppinglists'), where('mealPlanId', '==', mealPlanData.id));
+        const shoppingListSnapshot = await getDocs(shoppingListQuery);
+        shoppingListData = shoppingListSnapshot.docs[0]?.data()?.shoppingList || {};
+        console.log("Shopping list:", shoppingListData);
+
+        // Fetch full recipe details
+        const recipeIds = [...new Set(Object.values(mealPlanData.meals).flatMap(day => Object.values(day)))].filter(id => id !== null && id !== undefined);
+        console.log("Recipe IDs:", recipeIds);
+        const recipesQuery = query(collection(db, 'recipes'), where(documentId(), 'in', recipeIds));
+        const recipesSnapshot = await getDocs(recipesQuery);
+        fullRecipes = recipesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } else {
+        // Use the local state for shopping list and recipes
+        fullRecipes = recipes.filter(recipe => 
+          Object.values(mealPlanData.meals).some(day => Object.values(day).includes(recipe.id))
+        );
+      }
+
+      console.log("Full recipes:", fullRecipes);
+
+      // Generate and download PDF
+      const doc = generateMealPlanPDF(mealPlanData, shoppingListData, fullRecipes);
+      doc.save(`${mealPlanData.name || 'Essensplan'}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      console.error('Error details:', error.message, error.stack);
+      throw error;
+    }
+  }, [db, shoppingList, recipes]);
+
+  if (isSubmitted && mealPlanData && shoppingList) {
     return (
       <MealPlanSummary
-        mealPlanId={mealPlanId}
+        mealPlanId={mealPlanId || ''}
         mealPlanData={mealPlanData}
         shoppingList={shoppingList}
         recipes={recipes}
+        handleDownload={handleDownload}
       />
     );
   }
@@ -234,11 +282,33 @@ const MealPlanForm = ({ editingMealPlan }) => {
     return true;
   };
 
+  const handleDeleteRecipe = (day, mealType) => {
+    setMeals(prevMeals => ({
+      ...prevMeals,
+      [day]: { ...prevMeals[day], [mealType]: null }
+    }));
+  };
+
   return (
     <Paper elevation={3} style={{ padding: '24px', maxWidth: '800px', margin: 'auto', marginBottom: '20px' }}>
       <Typography variant="h4" gutterBottom color="primary">
         {editingMealPlan ? 'Versorgungsplan bearbeiten' : 'Neuen Versorgungsplan erstellen'}
       </Typography>
+      {submitError && (
+        <Typography color="error" gutterBottom>
+          {submitError}
+        </Typography>
+      )}
+      {isSubmitted && (
+        <Typography color="success" gutterBottom>
+          Versorgungsplan erfolgreich gespeichert!
+        </Typography>
+      )}
+      {isSubmitted && !user && (
+        <Typography color="info" gutterBottom>
+          Ihr Versorgungsplan wurde gespeichert. Um ihn später wieder aufrufen zu können, erstellen Sie bitte ein Konto oder melden Sie sich an.
+        </Typography>
+      )}
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
@@ -302,8 +372,8 @@ const MealPlanForm = ({ editingMealPlan }) => {
                   </Typography>
                   <Divider sx={{ mb: 1 }} />
                   {['breakfast', 'lunch', 'dinner'].map((mealType) => (
-                    <Box key={mealType} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                    <Box key={mealType} sx={{ display: 'flex', alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="body2" sx={{ flexGrow: 1, minWidth: '150px', mb: { xs: 1, sm: 0 } }}>
                         {mealType === 'breakfast' ? 'Frühstück' :
                          mealType === 'lunch' ? 'Mittagessen' : 'Abendessen'}:
                         {meals[dayKey][mealType] ? (
@@ -312,14 +382,27 @@ const MealPlanForm = ({ editingMealPlan }) => {
                           ' Keine Auswahl'
                         )}
                       </Typography>
-                      <Button
-                        variant="outlined"
-                        startIcon={<EditIcon />}
-                        onClick={() => handleOpenSelector(dayKey, mealType)}
-                        size="small"
-                      >
-                        {meals[dayKey][mealType] ? 'Ändern' : 'Auswählen'}
-                      </Button>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleOpenSelector(dayKey, mealType)}
+                          size="small"
+                        >
+                          {meals[dayKey][mealType] ? 'Ändern' : 'Auswählen'}
+                        </Button>
+                        {meals[dayKey][mealType] && (
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleDeleteRecipe(dayKey, mealType)}
+                            size="small"
+                          >
+                            Löschen
+                          </Button>
+                        )}
+                      </Box>
                     </Box>
                   ))}
                 </CardContent>

@@ -6,12 +6,14 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
-const FeatureCard = ({ icon, title, description }) => (
+const FeatureCard = ({ icon, title, description, link }) => (
   <motion.div
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >
     <Box
+      component={RouterLink}
+      to={link}
       sx={{
         backgroundColor: 'background.paper',
         borderRadius: 2,
@@ -22,10 +24,23 @@ const FeatureCard = ({ icon, title, description }) => (
         alignItems: 'center',
         textAlign: 'center',
         boxShadow: 3,
+        textDecoration: 'none',
+        color: 'inherit',
+        transition: 'box-shadow 0.3s',
+        '&:hover': {
+          boxShadow: 6,
+        },
       }}
     >
       <Box sx={{ mb: 1, color: 'primary.main' }}>{icon}</Box>
-      <Typography variant="subtitle1" component="h3" gutterBottom>
+      <Typography 
+        variant="subtitle1" 
+        component="h3"
+        gutterBottom
+        sx={{
+          color: 'text.primary',
+        }}
+      >
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">
@@ -114,6 +129,7 @@ const LandingPage = () => {
               icon={<RestaurantMenuIcon fontSize={isMobile ? "medium" : "large"} />}
               title="Vielfältige Rezepte"
               description="Entdecken Sie eine große Auswahl an Rezepten für jede Gelegenheit und jeden Geschmack."
+              link="/rezepte"
             />
           </Grid>
           <Grid item xs={12} md={4}>
@@ -121,6 +137,7 @@ const LandingPage = () => {
               icon={<CalendarTodayIcon fontSize={isMobile ? "medium" : "large"} />}
               title="Einfache Planung"
               description="Erstellen Sie mühelos Mahlzeitenpläne für Ihre Gruppe und sparen Sie Zeit bei der Organisation."
+              link="/essensplaene/neu"
             />
           </Grid>
           <Grid item xs={12} md={4}>
@@ -128,6 +145,7 @@ const LandingPage = () => {
               icon={<ShoppingCartIcon fontSize={isMobile ? "medium" : "large"} />}
               title="Automatische Einkaufslisten"
               description="Generieren Sie automatisch Einkaufslisten basierend auf Ihren Mahlzeitenplänen."
+              link="/essensplaene/neu"
             />
           </Grid>
         </Grid>

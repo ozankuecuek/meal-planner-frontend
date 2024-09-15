@@ -88,6 +88,14 @@ const RecipeDetail = () => {
         </Grid>
       </Grid>
 
+      {/* Add description here */}
+      {recipe.description && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" sx={{ mb: 2 }}>Beschreibung</Typography>
+          <Typography variant="body1">{recipe.description}</Typography>
+        </Box>
+      )}
+
       <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>Zutaten</Typography>
       <Grid container spacing={2}>
         {recipe.ingredients && recipe.ingredients.map((ingredient, index) => (
